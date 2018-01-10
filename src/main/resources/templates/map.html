@@ -1,0 +1,22 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.pumpkinsheads.potholedetection.swag">
+<head>
+    <title>Serving Pothole Detection System</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <link rel="stylesheet" th:href="@{/css/collect.css}"/>
+    <script type="text/javascript" th:src="@{/js/collect.js}"></script>
+    <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+<h3>Pothole Detection</h3>
+<div id="map"></div>
+<script th:inline="text"
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDO1fcAKYKKfs1oJ8Ro2Uwwvz0qc3WLzQ&amp;callback=fillMap"
+        async="async" defer="defer"></script>
+<div class="footer">
+    <p id="agency"> Alma Mater Studiorum Bologna - Laurea Magistrale in Ingegneria e Scienze Informatiche</p>
+    <p id="credits"> PumpkinsHeads Team </p>
+</div>
+</body>
+
+</html>

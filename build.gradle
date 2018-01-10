@@ -1,0 +1,42 @@
+group 'PotholeDetectionHttp'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.9.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'scala'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+
+jar {
+    baseName = 'gs-serving-web-content'
+    version =  '0.1.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile "org.scala-lang:scala-library:2.12.4"
+    compile "org.springframework.boot:spring-boot-starter-thymeleaf"
+    compile "org.springframework.boot:spring-boot-devtools"
+    compile "org.springframework.boot:spring-boot-starter-jdbc"
+    compile "joda-time:joda-time:2.2"
+//    compile "cz.jirutka.spring:spring-data-jdbc-repository:0.5.0"
+    compile "org.jdbi:jdbi3-core:3.0.0"
+    compile "org.jdbi:jdbi3-postgres:3.0.0"
+    compile "org.jdbi:jdbi3-spring4:3.0.0"
+    testCompile "junit:junit"
+}

@@ -1,0 +1,37 @@
+html {
+    background-color: beige;
+    
+}
+
+h1, h2, h3, h4, h5, h6 , p {
+    margin-right: 2%;
+    margin-left: 2%;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif
+}
+
+#map {
+    margin: 2% 2% 2% 2%;
+    border: 2px solid red;
+    width: 95%;
+    height: 800px;
+    align-content: center;
+}
+
+.footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    justify-content: space-between;
+    background-color: burlywood;
+    display: flex;
+    align-items: flex-start;
+}
+
+#credits {
+    width: 20%
+}
+
+#agency {
+    width: 20%;
+}
