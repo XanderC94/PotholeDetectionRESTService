@@ -7,7 +7,8 @@ var HttpClient = function(async) {
         }
 
         anHttpRequest.open("GET", aUrl, async );
-        anHttpRequest.send( null );
+        anHttpRequest.setRequestHeader("Content-Type", "application/json");
+        anHttpRequest.send({ 'request': "authentication token"});
     }
 }
 
@@ -15,8 +16,6 @@ function fillMap() {
 
     new HttpClient(true)
         .get('http://localhost:8080/collect', function(response) {
-
-//            alert(response);
 
             var potholes = (JSON.parse(response)).content;
 

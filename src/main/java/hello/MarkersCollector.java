@@ -8,10 +8,7 @@ import json.Marker;
 import json.Point;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
 
 @RestController
@@ -20,6 +17,7 @@ public class MarkersCollector {
     private final String areaDefault = "Any";
     private final AtomicLong counter = new AtomicLong();
 
+    @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/collect")
     public RESTResource<List<Point>> collect(
             @RequestParam(value = "area", defaultValue = areaDefault) String area) {
@@ -48,6 +46,7 @@ public class MarkersCollector {
                 res.stream().map(m-> m.coordinates).collect(Collectors.toList()));
     }
 
+    @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "/add")
     public RESTResource<Integer> add(@RequestParam(value = "lat", required = true) Double lat,
                                      @RequestParam(value = "lng", required = true) Double lng,

@@ -1,7 +1,5 @@
 package json;
 
-import json.Point;
-
 public class Marker {
 
     public long MID = 0;
