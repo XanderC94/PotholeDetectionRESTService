@@ -21,7 +21,7 @@ public class TryHTTPRequest {
         OkHttpClient client = new OkHttpClient();
 
         Request request = new Request.Builder()
-                .url("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + 44 + "&lon=" + 12)
+                .url("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + 40.7128 + "&lon=" + -74.0060)
                 .build();
 
         Response response = client.newCall(request).execute();

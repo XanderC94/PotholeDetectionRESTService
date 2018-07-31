@@ -1,9 +1,5 @@
 package rest;
 
-import json.Point;
-
-import java.util.List;
-
 public class RESTResource<T> {
 
     private final long id;

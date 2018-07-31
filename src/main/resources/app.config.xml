@@ -28,7 +28,7 @@
         </property>
     </bean>
 
-    <bean id="service" class="hello.JdbiSingleton">
+    <bean id="service" class="core.JdbiSingleton">
         <constructor-arg ref="jdbi"/>
     </bean>
 </beans>

@@ -20,7 +20,7 @@ package json;
  *      "neighbourhood":"Abissinia",
  *      "town":"Riccione",
  *      county":"RN",
- *      "state":"Emilia-Romagna",
+ *      "region":"Emilia-Romagna",
  *      "postcode":"47838",
  *      "country":"Italy",
  *      "country_code":"it"
@@ -32,12 +32,12 @@ package json;
 
 public class OSMAddressNode {
 
-    private final String houseNumber;
+    private final int houseNumber;
     private final String road;
     private final String neighbourhood;
     private final String town;
     private final String county; // like "RN"
-    private final String state; // like "Emilia-Romagna"
+    private final String region; // like "Emilia-Romagna"
     private final String postcode;
     private final String country;
     private final String countryCode;
@@ -51,7 +51,7 @@ public class OSMAddressNode {
                 ", neighbourhood='" + neighbourhood + '\'' +
                 ", town='" + town + '\'' +
                 ", county='" + county + '\'' +
-                ", state='" + state + '\'' +
+                ", region='" + region + '\'' +
                 ", postcode='" + postcode + '\'' +
                 ", country='" + country + '\'' +
                 ", countryCode='" + countryCode + '\'' +
@@ -59,15 +59,15 @@ public class OSMAddressNode {
                 '}';
     }
 
-    public OSMAddressNode(final String country, final String countryCode, final String state, final String county,
+    public OSMAddressNode(final String country, final String countryCode, final String region, final String county,
                           final String place, final String town, final String postcode, final String neighbourhood,
-                          final String road, final String houseNumber) {
+                          final String road, final int houseNumber) {
         this.houseNumber = houseNumber;
         this.road = road;
         this.neighbourhood = neighbourhood;
         this.town = town;
         this.county = county;
-        this.state = state;
+        this.region = region;
         this.postcode = postcode;
         this.country = country;
         this.countryCode = countryCode;
@@ -75,7 +75,7 @@ public class OSMAddressNode {
     }
 
 
-    public String getHouseNumber() {
+    public int getHouseNumber() {
         return houseNumber;
     }
 
@@ -95,8 +95,8 @@ public class OSMAddressNode {
         return county;
     }
 
-    public String getState() {
-        return state;
+    public String getRegion() {
+        return region;
     }
 
     public String getPostcode() {
@@ -110,4 +110,6 @@ public class OSMAddressNode {
     public String getCountryCode() {
         return countryCode;
     }
+
+    public String getPlace() { return place; }
 }

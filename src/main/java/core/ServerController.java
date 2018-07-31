@@ -1,4 +1,4 @@
-package hello;
+package core;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +24,6 @@ public class ServerController {
     @RequestMapping(value = "")
     public String index() {
 
-        return "index";
+        return "map";
     }
 }

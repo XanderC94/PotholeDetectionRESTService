@@ -1,4 +1,4 @@
-package hello;
+package core;
 
 import org.jdbi.v3.core.Jdbi;
 

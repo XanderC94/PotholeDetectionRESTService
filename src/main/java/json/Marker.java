@@ -4,30 +4,30 @@ public class Marker {
 
     public long MID = 0;
     public long nDetections = 0;
-    public Point coordinates;
-    public String locationDetection;
+    public GeoCoordinates coordinates;
+    public OSMAddressNode addressNode;
 
     public Marker(){}
 
-    public Marker(final long mid, final long n_detections, final Point coordinates, final String locationDetection){
+    public Marker(final long mid, final long n_detections, final GeoCoordinates coordinates, final OSMAddressNode addressNode){
 
         this.MID = mid;
         this.nDetections = n_detections;
         this.coordinates = coordinates;
-        this.locationDetection = locationDetection;
+        this.addressNode = addressNode;
     }
 
-    public Marker(final long n_detections, final Point coordinates, final String locationDetection){
+    public Marker(final long n_detections, final GeoCoordinates coordinates, final OSMAddressNode addressNode){
 
         this.nDetections = n_detections;
         this.coordinates = coordinates;
-        this.locationDetection = locationDetection;
+        this.addressNode = addressNode;
     }
 
-    public Marker(final Point coordinates, final String locationDetection){
+    public Marker(final GeoCoordinates coordinates, final OSMAddressNode addressNode){
 
         this.coordinates = coordinates;
-        this.locationDetection = locationDetection;
+        this.addressNode = addressNode;
     }
 
     public long getMID() {
@@ -38,16 +38,16 @@ public class Marker {
         return nDetections;
     }
 
-    public Point getCoordinates() {
+    public GeoCoordinates getCoordinates() {
         return coordinates;
     }
 
-    public String getLocationDetection() {
-        return locationDetection;
+    public OSMAddressNode getAddressNode() {
+        return addressNode;
     }
 
     @Override
     public String toString() {
-        return this.locationDetection +  " --- " + this.coordinates.toString();
+        return this.addressNode.toString() +  " @ " + this.coordinates.toString();
     }
 }
