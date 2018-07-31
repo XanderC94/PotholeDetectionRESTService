@@ -1,14 +1,15 @@
 group 'PotholeDetectionHttp'
 version '1.0-SNAPSHOT'
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.9.RELEASE")
-    }
-}
+//buildscript {
+//    repositories {
+//        mavenCentral()
+//    }
+//    dependencies {
+//        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.9.RELEASE")
+//
+//    }
+//}
 
 apply plugin: 'java'
 apply plugin: 'scala'
@@ -29,6 +30,9 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
+    compile "com.google.code.gson:gson:2.8.5"
+    compile "com.squareup.okio:okio:1.15.0"
+    compile "com.squareup.okhttp3:okhttp:3.11.0"
     compile "org.scala-lang:scala-library:2.12.4"
     compile "org.springframework.boot:spring-boot-starter-thymeleaf"
     compile "org.springframework.boot:spring-boot-devtools"
