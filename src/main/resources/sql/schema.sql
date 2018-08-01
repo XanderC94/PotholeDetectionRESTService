@@ -13,7 +13,7 @@ create table Markers (
     Country_Code VarChar(10) NOT NULL,
     Region VarChar(50) NOT NULL,
     County VarChar(50),
-    City VarChar(100) NOT NULL,
+    Town VarChar(100) NOT NULL,
     Place VarChar(50),
     Postcode VarChar(10),
     Neighbourhood VarChar(50),
