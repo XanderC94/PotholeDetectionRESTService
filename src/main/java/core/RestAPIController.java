@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
 import utils.Utils;
 
-import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +27,11 @@ import java.util.stream.Collectors;
 @RestController
 public class RestAPIController {
 
-    private static final Pattern regex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
+    private static final String ORS_API_KEY = "5b3ce3597851110001cf6248c396a2051da84b2ea36fa8e7f8f99d89";
+
+    private static final Pattern addressRegex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
+    private static final Pattern routingRegex = Pattern.compile("(?:\"geometry\":)\\{(.*?)\\}");
+
     private static final Gson gson = new GsonBuilder().create();
 
     private final String defaultTown = "none";
@@ -53,15 +56,15 @@ public class RestAPIController {
         Query q = handler.select(
                 "SELECT " +
                         "json_build_object(" +
-                            "'country', country, " +
-                            "'countryCode', country_code, " +
-                            "'region', region, " +
-                            "'county', county, " +
-                            "'town', town, " +
-                            "'place', place, " +
-                            "'neighbourhood', neighbourhood, " +
-                            "'road', road" +
-                        ") as AddressNode, " +
+                            "'country',country," +
+                            "'countryCode',country_code," +
+                            "'region',region," +
+                            "'county',county," +
+                            "'town',town," +
+                            "'place',place," +
+                            "'neighbourhood',neighbourhood," +
+                            "'road',road" +
+                        ") as AddressNode," +
                         "ST_AsGeoJSON(Coordinates)::json->'coordinates' AS Coordinates " +
                     "FROM markers" + addFilters(country, region, county, town, road) + ";"
         );
@@ -135,7 +138,7 @@ public class RestAPIController {
         Response reverseGeoCodingResult = client.newCall(reverseGeoCoding).execute();
 
         assert reverseGeoCodingResult.body() != null;
-        Matcher matcher = regex.matcher(reverseGeoCodingResult.body().string());
+        Matcher matcher = addressRegex.matcher(reverseGeoCodingResult.body().string());
 
         if (matcher.find()){
             String address = matcher.group(1);
