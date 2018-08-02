@@ -12,7 +12,9 @@ import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
 import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
+import utils.Utils;
 
+import javax.rmi.CORBA.Util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,15 +67,15 @@ public class RestAPIController {
         );
 
         if (!town.toLowerCase().equals(defaultTown)) {
-            q = q.bind("town", town);
+            q = q.bind("town", Utils.stringify(town));
         } else if (!county.toLowerCase().equals(defaultCounty)) {
-            q = q.bind("county", county);
+            q = q.bind("county", Utils.stringify(county));
         } else if (!country.toLowerCase().equals(defaultCountry)) {
-            q = q.bind("country", country);
+            q = q.bind("country", Utils.stringify(country));
         } else if (!region.toLowerCase().equals(defaultRegion)) {
-            q = q.bind("region", region);
+            q = q.bind("region", Utils.stringify(region));
         } else if (!road.toLowerCase().equals(defaultRoad)) {
-            q = q.bind("road", road);
+            q = q.bind("road", Utils.stringify(road));
         }
 
         List<Marker> res = q.map((rs, ctx) -> {
@@ -157,38 +159,31 @@ public class RestAPIController {
                                 "coordinates, country, country_code, region, county, town, place, postcode, neighbourhood, road, house_number" +
                             ") " +
                             "VALUES (" +
-                            "ST_GeogFromText('SRID=4326;POINT(:lat :lng)'),':Country', ':Country_Code',':Region', ':County',':Town',':Place',':Postcode',':Neighbourhood',':Road',':House_Number');"
+                                "ST_SetSRID(ST_MakePoint(:lat, :lng), 4326)," +
+                                ":country," +
+                                ":country_code," +
+                                ":region," +
+                                ":county," +
+                                ":town," +
+                                ":place," +
+                                ":postcode," +
+                                ":neighbourhood," +
+                                ":road," +
+                                ":house_number" +
+                            ");"
                     ).bind("lat", coordinates.lat)
                     .bind("lng", coordinates.lng)
-                    .bind("Country", node.getCountry())
-                    .bind("Country_Code", node.getCountryCode())
-                    .bind("Region", node.getRegion())
-                    .bind("County", node.getCounty())
-                    .bind("Town", node.getTown())
-                    .bind("Place", node.getPlace())
-                    .bind("Postcode", node.getPostcode())
-                    .bind("Neighbourhood", node.getNeighbourhood())
-                    .bind("Road", node.getRoad())
-                    .bind("House_Number", node.getHouseNumber())
+                    .bind("country", Utils.stringify(node.getCountry()))
+                    .bind("country_code", Utils.stringify(node.getCountryCode()))
+                    .bind("region", Utils.stringify(node.getRegion()))
+                    .bind("county", Utils.stringify(node.getCounty()))
+                    .bind("town", Utils.stringify(node.getTown()))
+                    .bind("place", Utils.stringify(node.getPlace()))
+                    .bind("postcode", Utils.stringify(node.getPostcode()))
+                    .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
+                    .bind("road", Utils.stringify(node.getRoad()))
+                    .bind("house_number", node.getHouseNumber())
                     .execute();
-//            String insertQuery = "INSERT " +
-//                    "INTO Markers(" +
-//                    "coordinates, country, country_code, region, county, town, place, postcode, neighbourhood, road, house_number" +
-//                    ") " +
-//                    "VALUES (" +
-//                    "ST_GeogFromText('SRID=4326;POINT(" + coordinates.lat + " " + coordinates.lng + ")'),'"
-//                    + node.getCountry() + "', '"
-//                    + node.getCountryCode() + "', '"
-//                    + node.getRegion()+ "', '"
-//                    + node.getCounty() + "', '"
-//                    + node.getTown() + "', '"
-//                    + node.getPlace() + "', '"
-//                    + node.getPostcode() + "', '"
-//                    + node.getNeighbourhood() + "', '"
-//                    + node.getRoad() + "', '"
-//                    + node.getHouseNumber() +
-//                    "');";
-//            ret = handler.createUpdate(insertQuery).execute();
 
             handler.close();
         }

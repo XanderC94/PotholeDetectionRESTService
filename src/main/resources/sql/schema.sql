@@ -7,7 +7,7 @@
 
 create table Markers (
     ID BigSerial PRIMARY KEY,
-	  Coordinates geography(Point) UNIQUE NOT NULL,
+	Coordinates geography(Point) UNIQUE NOT NULL,
     N_Detections Bigserial CHECK (N_Detections > 0),
     Country VarChar(60) NOT NULL,
     Country_Code VarChar(10) NOT NULL,
