@@ -59,9 +59,16 @@ public class OSMAddressNode {
                 '}';
     }
 
-    public OSMAddressNode(final String country, final String countryCode, final String region, final String county,
-                          final String place, final String town, final String postcode, final String neighbourhood,
-                          final String road, final int houseNumber) {
+    public OSMAddressNode(final int houseNumber,
+                          final String road,
+                          final String neighbourhood,
+                          final String town,
+                          final String county,
+                          final String region,
+                          final String postcode,
+                          final String country,
+                          final String countryCode,
+                          final String place) {
         this.houseNumber = houseNumber;
         this.road = road;
         this.neighbourhood = neighbourhood;

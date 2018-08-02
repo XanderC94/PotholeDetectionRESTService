@@ -2,10 +2,9 @@ package prototype;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import json.GeoCoordinates;
 import json.OSMAddressNode;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -17,6 +16,34 @@ public class TryHTTPRequest {
     static final Gson gson = new GsonBuilder().create();
 
     public static void main(String[] args) throws IOException {
+        tryMarkerAdding();
+    }
+
+    private static final void tryMarkerAdding() throws IOException{
+//        OSMAddressNode osmAddrNode = new OSMAddressNode(260,
+//                "Broadway",
+//                "null",
+//                "Civic Center",
+//                "New York County",
+//                "null",
+//                "10003",
+//                "United States of America",
+//                "us",
+//                "null");
+        GeoCoordinates coordinates = new GeoCoordinates(40.7128, -74.0060);
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request request = new Request.Builder()
+                .url("http://127.0.0.1:8080/add")
+                .post(RequestBody.create(MediaType.parse("application/json"), gson.toJson(coordinates)))
+                .build();
+
+        Response response = client.newCall(request).execute();
+    }
+
+
+    private static final void tryReverseGeocoding() throws IOException{
         String json = "";
         OkHttpClient client = new OkHttpClient();
 
@@ -26,7 +53,7 @@ public class TryHTTPRequest {
 
         Response response = client.newCall(request).execute();
 
-//        System.out.println(response.body().string());
+//      System.out.println(response.body().string());
 
         assert response.body() != null;
         Matcher matcher = regex.matcher(response.body().string());

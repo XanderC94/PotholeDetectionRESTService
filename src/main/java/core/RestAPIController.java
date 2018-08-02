@@ -2,9 +2,9 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import json.GeoCoordinates;
 import json.Marker;
 import json.OSMAddressNode;
-import json.GeoCoordinates;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -48,7 +48,7 @@ public class RestAPIController {
                             "'road', road" +
                         ") as AddressNode, " +
                         "ST_AsGeoJSON(Coordinates)::json->'coordinates' AS Coordinates " +
-                    "FROM markers" + (area.equals(areaDefault) ? "" : " WHERE City ILIKE :area OR County ILIKE :area")
+                    "FROM markers" + (area.equals(areaDefault) ? "" : " WHERE Town ILIKE :area OR County ILIKE :area")
         );
 
         if (!area.equals(areaDefault)) {
@@ -115,11 +115,9 @@ public class RestAPIController {
                                 "coordinates, country, country_code, region, county, town, place, postcode, neighbourhood, road, house_number" +
                             ") " +
                             "VALUES (" +
-                            "ST_SetSRID(ST_MakePoint(:lat, :lng), 4326)," +
-                            ":Country, :Country_Code, :Region, :County," +
-                            ":Town, :Place, :Postcode, :Neighbourhood, :Road, :House_Number" +
-                            ");"
-            ).bind("lat", coordinates.lat).bind("lng", coordinates.lng)
+                            "ST_GeogFromText('SRID=4326;POINT(:lat :lng)'),':Country', ':Country_Code',':Region', ':County',':Town',':Place',':Postcode',':Neighbourhood',':Road',':House_Number');"
+                    ).bind("lat", coordinates.lat)
+                    .bind("lng", coordinates.lng)
                     .bind("Country", node.getCountry())
                     .bind("Country_Code", node.getCountryCode())
                     .bind("Region", node.getRegion())
@@ -131,6 +129,24 @@ public class RestAPIController {
                     .bind("Road", node.getRoad())
                     .bind("House_Number", node.getHouseNumber())
                     .execute();
+//            String insertQuery = "INSERT " +
+//                    "INTO Markers(" +
+//                    "coordinates, country, country_code, region, county, town, place, postcode, neighbourhood, road, house_number" +
+//                    ") " +
+//                    "VALUES (" +
+//                    "ST_GeogFromText('SRID=4326;POINT(" + coordinates.lat + " " + coordinates.lng + ")'),'"
+//                    + node.getCountry() + "', '"
+//                    + node.getCountryCode() + "', '"
+//                    + node.getRegion()+ "', '"
+//                    + node.getCounty() + "', '"
+//                    + node.getTown() + "', '"
+//                    + node.getPlace() + "', '"
+//                    + node.getPostcode() + "', '"
+//                    + node.getNeighbourhood() + "', '"
+//                    + node.getRoad() + "', '"
+//                    + node.getHouseNumber() +
+//                    "');";
+//            ret = handler.createUpdate(insertQuery).execute();
 
             handler.close();
         }

@@ -1,15 +1,15 @@
 group 'PotholeDetectionHttp'
 version '1.0-SNAPSHOT'
 
-//buildscript {
-//    repositories {
-//        mavenCentral()
-//    }
-//    dependencies {
-//        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.9.RELEASE")
-//
-//    }
-//}
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.9.RELEASE")
+
+    }
+}
 
 apply plugin: 'java'
 apply plugin: 'scala'
