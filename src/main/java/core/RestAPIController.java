@@ -2,9 +2,9 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import json.GeoCoordinates;
 import json.Marker;
 import json.OSMAddressNode;
+import json.GeoCoordinates;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -15,7 +15,9 @@ import rest.RESTResource;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,18 +29,29 @@ public class RestAPIController {
     private static final Pattern regex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
     private static final Gson gson = new GsonBuilder().create();
 
-    private final String areaDefault = "Any";
+    private final String defaultTown = "none";
+    private final String defaultCounty = "none";
+    private final String defaultCountry = "none";
+    private final String defaultRegion = "none";
+    private final String defaultRoad = "none";
+
     private final AtomicLong counter = new AtomicLong();
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/collect")
-    public RESTResource<List<GeoCoordinates>> collect(@RequestParam(value = "area", defaultValue = areaDefault) String area) {
+    @RequestMapping(method = RequestMethod.GET, value = "/collect", headers="Content-Type=application/json; charset=utf-8")
+    public RESTResource<List<GeoCoordinates>> collect(@RequestParam(value = "country", defaultValue = defaultCountry, required = false) String country,
+                                                      @RequestParam(value = "region", defaultValue = defaultRegion, required = false) String region,
+                                                      @RequestParam(value = "county", defaultValue = defaultTown, required = false) String county,
+                                                      @RequestParam(value = "town", defaultValue = defaultTown,required = false) String town,
+                                                      @RequestParam(value = "road", defaultValue = defaultRoad,required = false) String road
+    ) {
 
         Handle handler = JdbiSingleton.getInstance().open();
 
         Query q = handler.select(
                 "SELECT " +
                         "json_build_object(" +
+                            "'country', country, " +
                             "'countryCode', country_code, " +
                             "'region', region, " +
                             "'county', county, " +
@@ -48,22 +61,29 @@ public class RestAPIController {
                             "'road', road" +
                         ") as AddressNode, " +
                         "ST_AsGeoJSON(Coordinates)::json->'coordinates' AS Coordinates " +
-                    "FROM markers" + (area.equals(areaDefault) ? "" : " WHERE Town ILIKE :area OR County ILIKE :area")
+                    "FROM markers" + addFilters(country, region, county, town, road) + ";"
         );
 
-        if (!area.equals(areaDefault)) {
-            q = q.bind("area", area);
+        if (!town.toLowerCase().equals(defaultTown)) {
+            q = q.bind("town", town);
+        } else if (!county.toLowerCase().equals(defaultCounty)) {
+            q = q.bind("county", county);
+        } else if (!country.toLowerCase().equals(defaultCountry)) {
+            q = q.bind("country", country);
+        } else if (!region.toLowerCase().equals(defaultRegion)) {
+            q = q.bind("region", region);
+        } else if (!road.toLowerCase().equals(defaultRoad)) {
+            q = q.bind("road", road);
         }
 
         List<Marker> res = q.map((rs, ctx) -> {
+                ArrayList tmp = gson.fromJson(rs.getString("Coordinates"), ArrayList.class);
 
-                    ArrayList tmp = gson.fromJson(rs.getString("Coordinates"), ArrayList.class);
-
-                    return new Marker(
-                            new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
-                            gson.fromJson(rs.getString("AddressNode"), OSMAddressNode.class)
-                    );
-                }
+                return new Marker(
+                        new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
+                        gson.fromJson(rs.getString("AddressNode"), OSMAddressNode.class)
+                );
+            }
         ).list();
 
         handler.close();
@@ -72,8 +92,30 @@ public class RestAPIController {
                 res.stream().map(m-> m.coordinates).collect(Collectors.toList()));
     }
 
+    private String addFilters(final String country, final String region, final String county, final String town, final String road) {
+
+        final Map<String, Boolean> enabledFilters = new HashMap<>();
+
+        enabledFilters.put("country", !country.toLowerCase().equals(defaultCountry));
+        enabledFilters.put("region", !region.toLowerCase().equals(defaultRegion));
+        enabledFilters.put("town", !town.toLowerCase().equals(defaultTown));
+        enabledFilters.put("county", !county.toLowerCase().equals(defaultCounty));
+        enabledFilters.put("road", !road.toLowerCase().equals(defaultRoad));
+
+        final List<String> filters = enabledFilters.entrySet().stream()
+                .filter(Map.Entry::getValue)
+                .map(e-> e.getKey() + " ILIKE :" + e.getKey().toLowerCase())
+                .collect(Collectors.toList());
+
+        final String filter = " WHERE " + String.join(" AND ", filters);
+
+        System.out.println(filter);
+
+        return filters.isEmpty() ? "" : filter;
+    }
+
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.POST, value = "/add", headers="Content-Type=application/json")
+    @RequestMapping(method = RequestMethod.POST, value = "/add", headers="Content-Type=application/json; charset=utf-8")
     public RESTResource<Integer> add(@RequestBody String body) throws IOException {
 
         GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
