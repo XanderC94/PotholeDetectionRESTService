@@ -70,7 +70,7 @@ public class RestAPIController {
         } else if (!country.equals(defaultCountry)) {
             q = q.bind("country", country);
         } else if (!region.equals(defaultRegion)) {
-            q = q.bind("county", region);
+            q = q.bind("region", region);
         }
 
         List<Marker> res = q.map((rs, ctx) -> {
