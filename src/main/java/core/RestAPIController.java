@@ -33,6 +33,8 @@ public class RestAPIController {
     private final String defaultCounty = "none";
     private final String defaultCountry = "none";
     private final String defaultRegion = "none";
+    private final String defaultRoad = "none";
+
     private final AtomicLong counter = new AtomicLong();
 
     @CrossOrigin(origins = "*")
@@ -40,17 +42,16 @@ public class RestAPIController {
     public RESTResource<List<GeoCoordinates>> collect(@RequestParam(value = "country", defaultValue = defaultCountry, required = false) String country,
                                                       @RequestParam(value = "region", defaultValue = defaultRegion, required = false) String region,
                                                       @RequestParam(value = "county", defaultValue = defaultTown, required = false) String county,
-                                                      @RequestParam(value = "town", defaultValue = defaultTown,required = false) String town) {
+                                                      @RequestParam(value = "town", defaultValue = defaultTown,required = false) String town,
+                                                      @RequestParam(value = "road", defaultValue = defaultRoad,required = false) String road
+    ) {
 
         Handle handler = JdbiSingleton.getInstance().open();
-
-        String filters = addFilters(country, region, county, town);
-
-        System.out.println(filters);
 
         Query q = handler.select(
                 "SELECT " +
                         "json_build_object(" +
+                            "'country', country, " +
                             "'countryCode', country_code, " +
                             "'region', region, " +
                             "'county', county, " +
@@ -60,17 +61,19 @@ public class RestAPIController {
                             "'road', road" +
                         ") as AddressNode, " +
                         "ST_AsGeoJSON(Coordinates)::json->'coordinates' AS Coordinates " +
-                    "FROM markers" + filters + ";"
+                    "FROM markers" + addFilters(country, region, county, town, road) + ";"
         );
 
-        if (!town.equals(defaultTown)) {
+        if (!town.toLowerCase().equals(defaultTown)) {
             q = q.bind("town", town);
-        } else if (!county.equals(defaultCounty)) {
+        } else if (!county.toLowerCase().equals(defaultCounty)) {
             q = q.bind("county", county);
-        } else if (!country.equals(defaultCountry)) {
+        } else if (!country.toLowerCase().equals(defaultCountry)) {
             q = q.bind("country", country);
-        } else if (!region.equals(defaultRegion)) {
+        } else if (!region.toLowerCase().equals(defaultRegion)) {
             q = q.bind("region", region);
+        } else if (!road.toLowerCase().equals(defaultRoad)) {
+            q = q.bind("road", road);
         }
 
         List<Marker> res = q.map((rs, ctx) -> {
@@ -89,14 +92,15 @@ public class RestAPIController {
                 res.stream().map(m-> m.coordinates).collect(Collectors.toList()));
     }
 
-    private String addFilters(final String country, final String region, final String county, final String town) {
+    private String addFilters(final String country, final String region, final String county, final String town, final String road) {
 
         final Map<String, Boolean> enabledFilters = new HashMap<>();
 
-        enabledFilters.put("Country", !country.equals(defaultCounty));
-        enabledFilters.put("Region", !region.equals(defaultCounty));
-        enabledFilters.put("Town", !town.equals(defaultCounty));
-        enabledFilters.put("County", !county.equals(defaultCounty));
+        enabledFilters.put("country", !country.toLowerCase().equals(defaultCountry));
+        enabledFilters.put("region", !region.toLowerCase().equals(defaultRegion));
+        enabledFilters.put("town", !town.toLowerCase().equals(defaultTown));
+        enabledFilters.put("county", !county.toLowerCase().equals(defaultCounty));
+        enabledFilters.put("road", !road.toLowerCase().equals(defaultRoad));
 
         final List<String> filters = enabledFilters.entrySet().stream()
                 .filter(Map.Entry::getValue)
@@ -104,6 +108,8 @@ public class RestAPIController {
                 .collect(Collectors.toList());
 
         final String filter = " WHERE " + String.join(" AND ", filters);
+
+        System.out.println(filter);
 
         return filters.isEmpty() ? "" : filter;
     }
