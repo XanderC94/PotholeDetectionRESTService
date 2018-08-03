@@ -32,32 +32,16 @@ package json;
 
 public class OSMAddressNode {
 
-    private final int houseNumber;
-    private final String road;
-    private final String neighbourhood;
-    private final String town;
-    private final String county; // like "RN"
-    private final String region; // like "Emilia-Romagna"
-    private final String postcode;
-    private final String country;
-    private final String countryCode;
-    private final String place; // address29
-
-    @Override
-    public String toString() {
-        return "OSMAddressNode{" +
-                "houseNumber='" + houseNumber + '\'' +
-                ", road='" + road + '\'' +
-                ", neighbourhood='" + neighbourhood + '\'' +
-                ", town='" + town + '\'' +
-                ", county='" + county + '\'' +
-                ", region='" + region + '\'' +
-                ", postcode='" + postcode + '\'' +
-                ", country='" + country + '\'' +
-                ", countryCode='" + countryCode + '\'' +
-                ", place='" + place + '\'' +
-                '}';
-    }
+    private int houseNumber;
+    private String road;
+    private String neighbourhood;
+    private String town;
+    private String county; // like "RN"
+    private String region; // like "Emilia-Romagna"
+    private String postcode;
+    private String country;
+    private String countryCode;
+    private String place; // address29
 
     public OSMAddressNode(final int houseNumber,
                           final String road,
@@ -81,6 +65,61 @@ public class OSMAddressNode {
         this.place = place;
     }
 
+    public void setHouseNumber(int houseNumber) {
+        this.houseNumber = houseNumber;
+    }
+
+    public void setRoad(String road) {
+        this.road = road;
+    }
+
+    public void setNeighbourhood(String neighbourhood) {
+        this.neighbourhood = neighbourhood;
+    }
+
+    public void setTown(String town) {
+        this.town = town;
+    }
+
+    public void setCounty(String county) {
+        this.county = county;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
+    public void setPostcode(String postcode) {
+        this.postcode = postcode;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public void setPlace(String place) {
+        this.place = place;
+    }
+
+    @Override
+    public String toString() {
+        return "OSMAddressNode{" +
+                "houseNumber='" + houseNumber + '\'' +
+                ", road='" + road + '\'' +
+                ", neighbourhood='" + neighbourhood + '\'' +
+                ", town='" + town + '\'' +
+                ", county='" + county + '\'' +
+                ", region='" + region + '\'' +
+                ", postcode='" + postcode + '\'' +
+                ", country='" + country + '\'' +
+                ", countryCode='" + countryCode + '\'' +
+                ", place='" + place + '\'' +
+                '}';
+    }
 
     public int getHouseNumber() {
         return houseNumber;
