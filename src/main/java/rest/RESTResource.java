@@ -4,7 +4,7 @@ public class RESTResource<T> {
 
     private final long id;
     private final T content;
-
+    private String info = "";
     public RESTResource(long id, T content) {
         this.id = id;
         this.content = content;
@@ -16,5 +16,19 @@ public class RESTResource<T> {
 
     public T getContent() {
         return content;
+    }
+
+    public String getInfo() {
+        return info;
+    }
+
+    public void setInfo(String info) {
+        this.info = info;
+    }
+
+    public RESTResource<T> withInfo(String info) {
+        this.setInfo(info);
+
+        return this;
     }
 }

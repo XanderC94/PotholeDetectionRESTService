@@ -2,10 +2,10 @@ package json;
 
 public class Marker {
 
-    public long MID = 0;
-    public long nDetections = 0;
-    public GeoCoordinates coordinates;
-    public OSMAddressNode addressNode;
+    private long MID = 0;
+    private long nDetections = 0;
+    private GeoCoordinates coordinates;
+    private OSMAddressNode addressNode;
 
     public Marker(){}
 
@@ -30,6 +30,22 @@ public class Marker {
         this.addressNode = addressNode;
     }
 
+    public void setMID(long MID) {
+        this.MID = MID;
+    }
+
+    public void setnDetections(long nDetections) {
+        this.nDetections = nDetections;
+    }
+
+    public void setCoordinates(GeoCoordinates coordinates) {
+        this.coordinates = coordinates;
+    }
+
+    public void setAddressNode(OSMAddressNode addressNode) {
+        this.addressNode = addressNode;
+    }
+
     public long getMID() {
         return MID;
     }
@@ -48,6 +64,11 @@ public class Marker {
 
     @Override
     public String toString() {
-        return this.addressNode.toString() +  " @ " + this.coordinates.toString();
+        return "Marker{" +
+                "MID=" + MID +
+                ", nDetections=" + nDetections +
+                ", coordinates=" + coordinates +
+                ", addressNode=" + addressNode.toString() +
+                '}';
     }
 }
