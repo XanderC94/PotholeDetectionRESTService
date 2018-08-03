@@ -40,7 +40,8 @@ function fillMap() {
         // });
 
         potholes.forEach(p => {
-            var marker = new google.maps.Marker({position: p, map: googleMap})
+            //var marker = new google.maps.Marker({position: p, map: googleMap})
+            var marker = L.marker(p).addTo(osmMap);
             console.log(marker);
         });
     });
