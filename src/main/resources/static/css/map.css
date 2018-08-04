@@ -17,7 +17,13 @@ h1, h2, h3, h4, h5, h6 , p {
     align-content: center;
 }
 
-#osmMap { height: 380px; }
+#osmMap {
+    margin: 2% 2% 2% 2%;
+    border: 2px solid red;
+    width: 95%;
+    height: 800px;
+    align-content: center;
+}
 
 .footer {
     position: fixed;

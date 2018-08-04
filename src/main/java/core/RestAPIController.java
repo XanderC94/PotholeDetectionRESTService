@@ -126,7 +126,7 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/collect", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<List<GeoCoordinates>> collect(
+    public @ResponseBody RESTResource<List<Marker>> collect(
             @RequestParam(value = "country", defaultValue = defaultCountry, required = false) String country,
             @RequestParam(value = "region", defaultValue = defaultRegion, required = false) String region,
             @RequestParam(value = "county", defaultValue = defaultTown, required = false) String county,
@@ -148,8 +148,8 @@ public class RestAPIController {
                             "'place',place," +
                             "'neighbourhood',neighbourhood," +
                             "'road',road" +
-                        ") as AddressNode," +
-                        "ST_AsGeoJSON(Coordinates)::json->'coordinates' AS Coordinates " +
+                        ") AS addressNode," +
+                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
                     "FROM markers" + addFilters(country, region, county, town, road) + ";"
         );
 
@@ -166,19 +166,18 @@ public class RestAPIController {
         }
 
         List<Marker> res = q.map((rs, ctx) -> {
-                ArrayList tmp = gson.fromJson(rs.getString("Coordinates"), ArrayList.class);
+                ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
 
                 return new Marker(
                         new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
-                        gson.fromJson(rs.getString("AddressNode"), OSMAddressNode.class)
+                        gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
                 );
             }
         ).list();
 
         handler.close();
 
-        return new RESTResource<>(counter.incrementAndGet(),
-                res.stream().map(Marker::getCoordinates).collect(Collectors.toList()));
+        return new RESTResource<>(counter.incrementAndGet(), res);
     }
 
     private String addFilters(final String country, final String region, final String county, final String town, final String road) {
@@ -198,7 +197,7 @@ public class RestAPIController {
 
         final String filter = " WHERE " + String.join(" AND ", filters);
 
-        println(filter);
+        println(filters);
 
         return filters.isEmpty() ? "" : filter;
     }

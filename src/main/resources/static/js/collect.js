@@ -43,10 +43,11 @@ function fillMap() {
         //   center: selection
         // });
 
-        potholes.forEach(p => {
+        potholes.forEach(m => {
             //var marker = new google.maps.Marker({position: p, map: googleMap})
-            var marker = L.marker(p).addTo(osmMap);
-            console.log(marker);
+            console.log(m);
+            var poi = L.marker(m.coordinates).addTo(osmMap);
+            console.log(poi);
         });
     });
 }
