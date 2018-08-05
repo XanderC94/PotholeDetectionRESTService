@@ -25,6 +25,10 @@ import java.util.stream.Collectors;
 
 import static utils.Utils.println;
 
+/**
+ *
+ *
+ */
 @RestController
 public class RestAPIController {
 
@@ -88,20 +92,18 @@ public class RestAPIController {
 
         assert routingServiceResult.body() != null;
         final String bodyCache = routingServiceResult.body().string();
-        Matcher m = routingRegex.matcher(bodyCache);
+        Matcher matcher1 = routingRegex.matcher(bodyCache);
 
         println(gcFrom.toString() + gcTo.toString());
 
-        if (m.find()) {
-            Matcher m2 = matrixRegex.matcher(m.group(1).trim());
-
-            //Arrays.stream(vertices).map(row -> new GeoCoordinates(row[0], row[1])).collect(Collectors.toList())
+        if (matcher1.find()) {
+            Matcher matcher2 = matrixRegex.matcher(matcher1.group(1).trim());
 
             List<GeoCoordinates> vertices = new ArrayList<>();
 
-            while (m2.find()) {
+            while (matcher2.find()) {
 
-                Optional<GeoCoordinates> gc = Arrays.stream(m2.group(1).trim().split(","))
+                Optional<GeoCoordinates> gc = Arrays.stream(matcher2.group(1).trim().split(","))
                         .map(Double::valueOf).map(d -> new GeoCoordinates(d, 0.0))
                         .reduce((lng, lat) -> new GeoCoordinates(lat.getLat(), lng.getLat()));
 
@@ -111,6 +113,41 @@ public class RestAPIController {
             Geometry geom = new Geometry("Linestring", vertices);
 
             println(vertices);
+
+            Handle handler = JdbiSingleton.getInstance().open();
+
+            vertices.forEach(v -> {
+
+                // First we need to extract a BB from each segment. HOW?
+
+                Query q = handler.select(
+                        "SELECT " +
+                                "json_build_object(" +
+                                "'country',country," +
+                                "'countryCode',country_code," +
+                                "'region',region," +
+                                "'county',county," +
+                                "'town',town," +
+                                "'place',place," +
+                                "'neighbourhood',neighbourhood," +
+                                "'road',road" +
+                            ") AS addressNode," +
+                            "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates" +
+                            "FROM markers " +
+                            "WHERE markers.coordinates && " +
+                                "ST_Transform(" +
+                                    "ST_MakeEnvelope(:min_lat, :min_lng, :max_lat, :max_lng, 4326)," +
+                                    "4326" + //SRID
+                                ");"
+                );
+
+
+                // Need to bind
+
+                // Need to execute
+            });
+
+            handler.close();
 
         } else {
 
