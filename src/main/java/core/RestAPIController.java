@@ -2,6 +2,7 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import javafx.util.Pair;
 import json.Geometry;
 import json.Marker;
 import json.OSMAddressNode;
@@ -22,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static utils.Utils.println;
 
@@ -103,9 +105,10 @@ public class RestAPIController {
 
             while (matcher2.find()) {
 
-                Optional<GeoCoordinates> gc = Arrays.stream(matcher2.group(1).trim().split(","))
-                        .map(Double::valueOf).map(d -> new GeoCoordinates(d, 0.0))
-                        .reduce((lng, lat) -> new GeoCoordinates(lat.getLat(), lng.getLat()));
+                Optional<GeoCoordinates> gc =
+                        Arrays.stream(matcher2.group(1).trim().split(","))
+                            .map(Double::valueOf).map(d -> new GeoCoordinates(d, 0.0))
+                            .reduce((lng, lat) -> new GeoCoordinates(lat.getLat(), lng.getLat()));
 
                 gc.ifPresent(vertices::add);
             }
@@ -116,7 +119,9 @@ public class RestAPIController {
 
             Handle handler = JdbiSingleton.getInstance().open();
 
-            vertices.forEach(v -> {
+            IntStream.range(1, vertices.size())
+                    .mapToObj(i -> new Pair<>(vertices.get(i-1), vertices.get(i)))
+                    .forEach(v -> {
 
                 // First we need to extract a BB from each segment. HOW?
 
@@ -141,8 +146,11 @@ public class RestAPIController {
                                 ");"
                 );
 
-
                 // Need to bind
+                q.bind("min_lat", v.getKey().getLat())
+                 .bind("min_lng", v.getKey().getLng())
+                 .bind("max_lat", v.getValue().getLat())
+                 .bind("max_lng", v.getValue().getLng());
 
                 // Need to execute
             });
