@@ -1,5 +1,7 @@
 package json;
 
+import java.util.Objects;
+
 public class Marker {
 
     private long MID = 0;
@@ -70,5 +72,19 @@ public class Marker {
                 ", coordinates=" + coordinates +
                 ", addressNode=" + addressNode.toString() +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Marker)) return false;
+        Marker marker = (Marker) o;
+        return Objects.equals(getCoordinates(), marker.getCoordinates()) &&
+                Objects.equals(getAddressNode(), marker.getAddressNode());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getCoordinates(), getAddressNode());
     }
 }

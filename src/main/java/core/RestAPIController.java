@@ -50,7 +50,9 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/route", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<List<Marker>> route(@RequestParam("from") String from,
-                                                          @RequestParam("to") String to, Model model) throws Exception {
+                                                          @RequestParam("to") String to,
+                                                          @RequestParam(value = "dist", required = false, defaultValue = "100") String dist,
+                                                          Model model) throws Exception {
 
         GeoCoordinates
                 gcFrom = new GeoCoordinates(0,0),
@@ -59,6 +61,8 @@ public class RestAPIController {
         Matcher
                 mFrom = arrayRegex.matcher(from),
                 mTo = arrayRegex.matcher(to);
+
+        Integer distance = Integer.valueOf(dist);
 
         if (mFrom.find() && mTo.find()) {
             gcFrom.setLat(Double.valueOf(mFrom.group(0)));
@@ -73,6 +77,8 @@ public class RestAPIController {
         } else {
             throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
         }
+
+        Set<Marker> results = new HashSet<>();
 
         OkHttpClient client = new OkHttpClient();
 
@@ -92,8 +98,6 @@ public class RestAPIController {
         final String bodyCache = routingServiceResult.body().string();
         Matcher matcher1 = routingRegex.matcher(bodyCache);
 
-        println(gcFrom.toString() + gcTo.toString());
-
         if (matcher1.find()) {
             Matcher matcher2 = matrixRegex.matcher(matcher1.group(1).trim());
 
@@ -111,9 +115,27 @@ public class RestAPIController {
 
             Geometry geom = new Geometry("Linestring", vertices);
 
-            println(vertices);
-
             Handle handler = JdbiSingleton.getInstance().open();
+
+            Query q = handler.select(
+                    "SELECT " +
+                            "json_build_object(" +
+                                "'country',country," +
+                                "'countryCode',country_code," +
+                                "'region',region," +
+                                "'county',county," +
+                                "'town',town," +
+                                "'place',place," +
+                                "'neighbourhood',neighbourhood," +
+                                "'road',road" +
+                            ") AS addressNode," +
+                            "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+                        "FROM markers " +
+                        "WHERE ST_DistanceSphere(" +
+                                "ST_SetSRID(ST_MakeLine(ST_MakePoint(:lat_A, :lng_A), ST_MakePoint(:lat_B, :lng_B)), 4326)," +
+                                "markers.coordinates" +
+                            ") < :dist;"
+            );
 
             IntStream.range(1, vertices.size())
                     .mapToObj(i -> new Segment(vertices.get(i-1), vertices.get(i)))
@@ -122,34 +144,21 @@ public class RestAPIController {
                         // NOTE: Latitude (X) and Longitude (Y) are the angles of in degrees
                         // of a point on the sphere surface from the Origin.
 
-                        Query q = handler.select(
-                                "SELECT " +
-                                        "json_build_object(" +
-                                        "'country',country," +
-                                        "'countryCode',country_code," +
-                                        "'region',region," +
-                                        "'county',county," +
-                                        "'town',town," +
-                                        "'place',place," +
-                                        "'neighbourhood',neighbourhood," +
-                                        "'road',road" +
-                                    ") AS addressNode," +
-                                    "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates" +
-                                    "FROM markers " +
-                                    "WHERE markers.coordinates && " +
-                                        "ST_Transform(" +
-                                            "ST_MakeEnvelope(:min_lat, :min_lng, :max_lat, :max_lng, 4326)," +
-                                            "4326" + //SRID
-                                        ");"
-                        );
-
                         // Need to bind
-                        q.bind("min_lat", v.getA().getLat())
-                         .bind("min_lng", v.getA().getLng())
-                         .bind("max_lat", v.getB().getLat())
-                         .bind("max_lng", v.getB().getLng());
+                        q.bind("lat_A", v.getA().getLat())
+                         .bind("lng_A", v.getA().getLng())
+                         .bind("lat_B", v.getB().getLat())
+                         .bind("lng_B", v.getB().getLng())
+                         .bind("dist", distance);
 
-                        // Need to execute
+                        results.addAll(q.map((rs, ctx) -> {
+                            ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
+
+                            return new Marker(
+                                    new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
+                                    gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
+                            );
+                        }).list());
             });
 
             handler.close();
@@ -163,7 +172,78 @@ public class RestAPIController {
                             "}");
         }
 
-        return new RESTResource<>(counter.incrementAndGet(), new ArrayList<>());
+        return new RESTResource<>(counter.incrementAndGet(), new ArrayList<>(results));
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/area", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("tlc") String tlc,
+                                                          @RequestParam("brc") String brc, Model model) throws Exception {
+
+        GeoCoordinates
+                gcTLC = new GeoCoordinates(0,0),
+                gcBRC = new GeoCoordinates(0,0);
+
+        Matcher
+                mTLC = arrayRegex.matcher(tlc),
+                mBRC = arrayRegex.matcher(brc);
+
+        if (mTLC.find() && mBRC.find()) {
+            gcTLC.setLat(Double.valueOf(mTLC.group(0)));
+            gcBRC.setLat(Double.valueOf(mBRC.group(0)));
+        } else {
+            throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
+        }
+
+        if (mTLC.find() && mBRC.find()) {
+            gcTLC.setLng(Double.valueOf(mTLC.group(0)));
+            gcBRC.setLng(Double.valueOf(mBRC.group(0)));
+        } else {
+            throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
+        }
+
+        Handle handler = JdbiSingleton.getInstance().open();
+
+        Query q = handler.select(
+                "SELECT " +
+                        "json_build_object(" +
+                            "'country',country," +
+                            "'countryCode',country_code," +
+                            "'region',region," +
+                            "'county',county," +
+                            "'town',town," +
+                            "'place',place," +
+                            "'neighbourhood',neighbourhood," +
+                            "'road',road" +
+                        ") AS addressNode," +
+                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates" +
+                    "FROM markers " +
+                    "WHERE markers.coordinates && " +
+                        "ST_Transform(" +
+                            "ST_MakeEnvelope(:min_lat, :min_lng, :max_lat, :max_lng, 4326)," +
+                            "4326" + //SRID
+                        ");"
+        );
+
+        // Need to bind
+        q.bind("lat_A", gcTLC.getLat())
+        .bind("lng_A", gcTLC.getLng())
+        .bind("lat_B", gcBRC.getLat())
+        .bind("lng_B", gcBRC.getLng());
+
+        handler.close();
+
+        List<Marker> res = q.map((rs, ctx) -> {
+                    ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
+
+                    return new Marker(
+                            new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
+                            gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
+                    );
+                }
+        ).list();
+
+        return new RESTResource<>(counter.incrementAndGet(), res);
     }
 
     @CrossOrigin(origins = "*")

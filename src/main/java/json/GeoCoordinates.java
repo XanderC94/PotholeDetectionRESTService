@@ -2,6 +2,8 @@ package json;
 
 import utils.Utils;
 
+import java.util.Objects;
+
 public class GeoCoordinates {
     private double lat;
     private double lng;
@@ -31,8 +33,8 @@ public class GeoCoordinates {
     @Override
     public String toString() {
         return "GeoCoordinates{" +
-                "lat=" + lat +
-                ", lng=" + lng +
+                lat + " N" + ", " +
+                lng + " E" +
                 '}';
     }
 
@@ -42,5 +44,20 @@ public class GeoCoordinates {
 
     public void setRadius(double radius) {
         this.radius = radius;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GeoCoordinates)) return false;
+        GeoCoordinates that = (GeoCoordinates) o;
+        return Double.compare(that.getLat(), getLat()) == 0 &&
+                Double.compare(that.getLng(), getLng()) == 0 &&
+                Double.compare(that.getRadius(), getRadius()) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getLat(), getLng(), getRadius());
     }
 }

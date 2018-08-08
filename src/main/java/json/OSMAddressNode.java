@@ -1,5 +1,7 @@
 package json;
 
+import java.util.Objects;
+
 /**
  * {
  *  "place_id":"56907419",
@@ -158,4 +160,26 @@ public class OSMAddressNode {
     }
 
     public String getPlace() { return place; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof OSMAddressNode)) return false;
+        OSMAddressNode that = (OSMAddressNode) o;
+        return getHouseNumber() == that.getHouseNumber() &&
+                Objects.equals(getRoad(), that.getRoad()) &&
+                Objects.equals(getNeighbourhood(), that.getNeighbourhood()) &&
+                Objects.equals(getTown(), that.getTown()) &&
+                Objects.equals(getCounty(), that.getCounty()) &&
+                Objects.equals(getRegion(), that.getRegion()) &&
+                Objects.equals(getPostcode(), that.getPostcode()) &&
+                Objects.equals(getCountry(), that.getCountry()) &&
+                Objects.equals(getCountryCode(), that.getCountryCode()) &&
+                Objects.equals(getPlace(), that.getPlace());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getHouseNumber(), getRoad(), getNeighbourhood(), getTown(), getCounty(), getRegion(), getPostcode(), getCountry(), getCountryCode(), getPlace());
+    }
 }

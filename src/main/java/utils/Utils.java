@@ -48,17 +48,27 @@ public class Utils {
      */
     public static double haversineDistance(final GeoCoordinates A, final GeoCoordinates B) {
 
-        double dLat = Math.toRadians(A.getLat() - B.getLat());
-        double dLng = Math.toRadians(A.getLng() - B.getLng());
+        double dLat = Math.toRadians(B.getLat() - A.getLat());
+        double dLng = Math.toRadians(B.getLng() - A.getLng());
 
         GeoCoordinates rA = new GeoCoordinates(Math.toRadians(A.getLat()), Math.toRadians(A.getLng()));
         GeoCoordinates rB = new GeoCoordinates(Math.toRadians(B.getLat()), Math.toRadians(B.getLng()));
 
         double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(rA.getLat()) * Math.cos(rB.getLat()) * Math.sin(dLng/2) * Math.sin(dLng/2);
+                Math.cos(rA.getLat()) * Math.cos(rB.getLat()) *
+                        Math.sin(dLng/2) * Math.sin(dLng/2);
 
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+        double c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+
         return EarthRadius * c;
+    }
+
+    public static GeoCoordinates cartesian2DRotation(final GeoCoordinates A, final double theta) {
+
+        return new GeoCoordinates(
+                A.getLat()*Math.sin(theta) + A.getLng()*Math.cos(theta), // y
+                A.getLat()*Math.cos(theta) - A.getLng()*Math.sin(theta) // x
+        );
     }
 
     public static GeoCoordinates rodriguezRotation(final GeoCoordinates A, final GeoCoordinates O, final double theta) {
@@ -102,12 +112,7 @@ public class Utils {
         double tanLat = b[0] / b[1];
         double tanLng = Math.sqrt(b[0]*b[0] + b[1]*b[1]) / b[2];
 
-        println(Arrays.asList(
-                Math.toDegrees(Math.atan(tanLat)),
-                Math.toDegrees(Math.atan(tanLng))
-        ));
-
-        return new GeoCoordinates(0,0);
+        return new GeoCoordinates(Math.toDegrees(Math.atan(tanLat)), Math.toDegrees(Math.atan(tanLng)));
 
     }
 
@@ -119,10 +124,10 @@ public class Utils {
         GeoCoordinates rA = new GeoCoordinates(Math.toRadians(A.getLat()), Math.toRadians(A.getLng()));
         GeoCoordinates rB = new GeoCoordinates(Math.toRadians(B.getLat()), Math.toRadians(B.getLng()));
 
-        double Bx = Math.cos(rB.getLat()) * Math.cos(dLng);
-        double By = Math.cos(rB.getLat()) * Math.sin(dLng);
-        double mLat = Math.atan2(Math.sin(rA.getLat()) + Math.sin(rB.getLat()), Math.sqrt((Math.cos(rA.getLat()) + Bx) * (Math.cos(rA.getLat()) + Bx) + By * By));
-        double mLng = rA.getLng() + Math.atan2(By, Math.cos(rA.getLat()) + Bx);
+        double Mx = Math.cos(rB.getLat()) * Math.cos(dLng);
+        double My = Math.cos(rB.getLat()) * Math.sin(dLng);
+        double mLat = Math.atan2(Math.sin(rA.getLat()) + Math.sin(rB.getLat()), Math.sqrt((Math.cos(rA.getLat()) + Mx) * (Math.cos(rA.getLat()) + Mx) + My * My));
+        double mLng = rA.getLng() + Math.atan2(My, Math.cos(rA.getLat()) + Mx);
 
         return new GeoCoordinates(Math.toDegrees(mLat), Math.toDegrees(mLng));
     }

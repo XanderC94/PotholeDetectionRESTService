@@ -20,3 +20,40 @@ create table Markers (
     Road VarChar(50) NOT NULL,
     House_Number INT CHECK (House_Number > -1)
 );
+
+SELECT
+	json_build_object(
+		'country',country,
+		'countryCode',country_code,
+		'region',region,
+		'county',county,
+		'town',town,
+		'place',place,
+		'neighbourhood',neighbourhood,
+		'road',road
+	) AS addressNode,
+	ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates
+FROM markers
+WHERE ST_DistanceSphere(
+	ST_SetSRID(ST_MakeLine(ST_MakePoint(latA, lngA), ST_MakePoint(latB, lngB)), 4326),
+	markers.coordinates
+) < 100;
+
+SELECT
+json_build_object(
+	'country',country,
+	'countryCode',country_code,
+	'region',region,
+	'county',county,
+	'town',town,
+	'place',place,
+	'neighbourhood',neighbourhood,
+	'road',road
+) AS addressNode,
+ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates
+FROM markers
+WHERE markers.coordinates &&
+ST_Transform(
+ST_MakeEnvelope(43, 11, 45, 13, 4326),
+4326
+);
