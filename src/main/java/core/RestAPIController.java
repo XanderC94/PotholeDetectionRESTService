@@ -2,11 +2,7 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import javafx.util.Pair;
-import json.Geometry;
-import json.Marker;
-import json.OSMAddressNode;
-import json.GeoCoordinates;
+import json.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -120,39 +116,40 @@ public class RestAPIController {
             Handle handler = JdbiSingleton.getInstance().open();
 
             IntStream.range(1, vertices.size())
-                    .mapToObj(i -> new Pair<>(vertices.get(i-1), vertices.get(i)))
+                    .mapToObj(i -> new Segment(vertices.get(i-1), vertices.get(i)))
                     .forEach(v -> {
 
-                // First we need to extract a BB from each segment. HOW?
+                        // NOTE: Latitude (X) and Longitude (Y) are the angles of in degrees
+                        // of a point on the sphere surface from the Origin.
 
-                Query q = handler.select(
-                        "SELECT " +
-                                "json_build_object(" +
-                                "'country',country," +
-                                "'countryCode',country_code," +
-                                "'region',region," +
-                                "'county',county," +
-                                "'town',town," +
-                                "'place',place," +
-                                "'neighbourhood',neighbourhood," +
-                                "'road',road" +
-                            ") AS addressNode," +
-                            "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates" +
-                            "FROM markers " +
-                            "WHERE markers.coordinates && " +
-                                "ST_Transform(" +
-                                    "ST_MakeEnvelope(:min_lat, :min_lng, :max_lat, :max_lng, 4326)," +
-                                    "4326" + //SRID
-                                ");"
-                );
+                        Query q = handler.select(
+                                "SELECT " +
+                                        "json_build_object(" +
+                                        "'country',country," +
+                                        "'countryCode',country_code," +
+                                        "'region',region," +
+                                        "'county',county," +
+                                        "'town',town," +
+                                        "'place',place," +
+                                        "'neighbourhood',neighbourhood," +
+                                        "'road',road" +
+                                    ") AS addressNode," +
+                                    "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates" +
+                                    "FROM markers " +
+                                    "WHERE markers.coordinates && " +
+                                        "ST_Transform(" +
+                                            "ST_MakeEnvelope(:min_lat, :min_lng, :max_lat, :max_lng, 4326)," +
+                                            "4326" + //SRID
+                                        ");"
+                        );
 
-                // Need to bind
-                q.bind("min_lat", v.getKey().getLat())
-                 .bind("min_lng", v.getKey().getLng())
-                 .bind("max_lat", v.getValue().getLat())
-                 .bind("max_lng", v.getValue().getLng());
+                        // Need to bind
+                        q.bind("min_lat", v.getA().getLat())
+                         .bind("min_lng", v.getA().getLng())
+                         .bind("max_lat", v.getB().getLat())
+                         .bind("max_lng", v.getB().getLng());
 
-                // Need to execute
+                        // Need to execute
             });
 
             handler.close();

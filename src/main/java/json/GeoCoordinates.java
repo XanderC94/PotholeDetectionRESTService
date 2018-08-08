@@ -1,8 +1,11 @@
 package json;
 
+import utils.Utils;
+
 public class GeoCoordinates {
     private double lat;
     private double lng;
+    private double radius = Utils.EarthRadius;
 
     public GeoCoordinates(final double lat, final double lng) {
         this.lat = lat;
@@ -31,5 +34,13 @@ public class GeoCoordinates {
                 "lat=" + lat +
                 ", lng=" + lng +
                 '}';
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    public void setRadius(double radius) {
+        this.radius = radius;
     }
 }

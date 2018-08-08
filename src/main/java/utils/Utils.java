@@ -1,5 +1,9 @@
 package utils;
 
+import json.GeoCoordinates;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
@@ -21,5 +25,105 @@ public class Utils {
         return String.join(",",
                 x.stream().map(Object::toString).collect(Collectors.toList())
         );
+    }
+
+    // number of km per degree = ~111km (111.32 in google maps, but range varies
+    // between 110.567km at the equator and 111.699km at the poles)
+    // 1km in degree = 1 / 111.32km = 0.0089
+    // 1m in degree = 0.0089 / 1000 = 0.0000089
+    public static double mToA = 1 / ((110567.0 + 111699.0) / 2);
+
+    // Earth’s radius, sphere
+    public static double EarthRadius = 6378137.0;
+
+    /**
+     * This uses the ‘haversineDistance’ formula to calculate the great-circle
+     * distance between two points – that is, the shortest distance over the earth’s surface –
+     * giving an ‘as-the-crow-flies’ distance between the points
+     * (ignoring any hills they fly over, of course!) in Meters.
+     *
+     * @param A
+     * @param B
+     * @return The distance between A and B
+     */
+    public static double haversineDistance(final GeoCoordinates A, final GeoCoordinates B) {
+
+        double dLat = Math.toRadians(A.getLat() - B.getLat());
+        double dLng = Math.toRadians(A.getLng() - B.getLng());
+
+        GeoCoordinates rA = new GeoCoordinates(Math.toRadians(A.getLat()), Math.toRadians(A.getLng()));
+        GeoCoordinates rB = new GeoCoordinates(Math.toRadians(B.getLat()), Math.toRadians(B.getLng()));
+
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(rA.getLat()) * Math.cos(rB.getLat()) * Math.sin(dLng/2) * Math.sin(dLng/2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+        return EarthRadius * c;
+    }
+
+    public static GeoCoordinates rodriguezRotation(final GeoCoordinates A, final GeoCoordinates O, final double theta) {
+
+        double[] v = {
+                Math.sin(A.getLat())*Math.cos(A.getLng()),
+                Math.sin(A.getLat())*Math.sin(A.getLng()),
+                Math.cos(A.getLat()),
+        };
+
+        double[] k = {
+                Math.sin(O.getLat())*Math.cos(O.getLng()),
+                Math.sin(O.getLat())*Math.sin(O.getLng()),
+                Math.cos(O.getLat())
+        };
+
+        double[][] K = {
+                { 0,                   -k[2]*Math.sin(theta), k[1]*Math.sin(theta)},
+                { k[2]*Math.sin(theta), 0,                   -k[0]*Math.sin(theta)},
+                {-k[1]*Math.sin(theta), k[0]*Math.sin(theta), 0                   }
+        };
+
+        double[][] K2 = {
+            {0,                               k[2]*k[2]*(1 - Math.cos(theta)), k[1]*k[1]*(1 - Math.cos(theta))},
+            {k[2]*k[2]*(1 - Math.cos(theta)), 0,                               k[0]*k[0]*(1 - Math.cos(theta))},
+            {k[1]*k[1]*(1 - Math.cos(theta)), k[0]*k[0]*(1 - Math.cos(theta)), 0                              }
+        };
+
+        double[][] R = {
+                {1,                K[0][1]*K2[0][1], K[0][2]*K2[0][2]},
+                {K[1][0]*K2[1][0], 1,                K[1][2]*K2[1][2]},
+                {K[2][0]*K2[2][0], K[2][1]*K2[2][1], 1               }
+        };
+
+        double[] b = {
+               v[0]*(R[0][0] + R[0][1] + R[0][2]),
+               v[1]*(R[1][0] + R[1][1] + R[1][2]),
+               v[2]*(R[2][0] + R[2][1] + R[2][2])
+        };
+
+        double tanLat = b[0] / b[1];
+        double tanLng = Math.sqrt(b[0]*b[0] + b[1]*b[1]) / b[2];
+
+        println(Arrays.asList(
+                Math.toDegrees(Math.atan(tanLat)),
+                Math.toDegrees(Math.atan(tanLng))
+        ));
+
+        return new GeoCoordinates(0,0);
+
+    }
+
+    public static GeoCoordinates midPoint(final GeoCoordinates A, final GeoCoordinates B){
+
+        double dLng = Math.toRadians(B.getLng() - A.getLng());
+
+        //convert to radians
+        GeoCoordinates rA = new GeoCoordinates(Math.toRadians(A.getLat()), Math.toRadians(A.getLng()));
+        GeoCoordinates rB = new GeoCoordinates(Math.toRadians(B.getLat()), Math.toRadians(B.getLng()));
+
+        double Bx = Math.cos(rB.getLat()) * Math.cos(dLng);
+        double By = Math.cos(rB.getLat()) * Math.sin(dLng);
+        double mLat = Math.atan2(Math.sin(rA.getLat()) + Math.sin(rB.getLat()), Math.sqrt((Math.cos(rA.getLat()) + Bx) * (Math.cos(rA.getLat()) + Bx) + By * By));
+        double mLng = rA.getLng() + Math.atan2(By, Math.cos(rA.getLat()) + Bx);
+
+        return new GeoCoordinates(Math.toDegrees(mLat), Math.toDegrees(mLng));
     }
 }
