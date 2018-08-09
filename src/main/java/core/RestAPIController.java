@@ -51,7 +51,7 @@ public class RestAPIController {
     @RequestMapping(method = RequestMethod.GET, value = "/route", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<List<Marker>> route(@RequestParam("from") String from,
                                                           @RequestParam("to") String to,
-                                                          @RequestParam(value = "dist", required = false, defaultValue = "100") String dist,
+                                                          @RequestParam(value = "dist", required = false, defaultValue = "100") Integer dist,
                                                           Model model) throws Exception {
 
         GeoCoordinates
@@ -61,8 +61,6 @@ public class RestAPIController {
         Matcher
                 mFrom = arrayRegex.matcher(from),
                 mTo = arrayRegex.matcher(to);
-
-        Integer distance = Integer.valueOf(dist);
 
         if (mFrom.find() && mTo.find()) {
             gcFrom.setLat(Double.valueOf(mFrom.group(0)));
@@ -149,7 +147,7 @@ public class RestAPIController {
                          .bind("lng_A", v.getA().getLng())
                          .bind("lat_B", v.getB().getLat())
                          .bind("lng_B", v.getB().getLng())
-                         .bind("dist", distance);
+                         .bind("dist", dist);
 
                         results.addAll(q.map((rs, ctx) -> {
                             ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
