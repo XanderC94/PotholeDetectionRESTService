@@ -16,7 +16,7 @@ var HttpClient = function(async) {
 
 function fillMap() {
 
-    var body = {town:"Riccione"};
+    var body = {country: "Italia", town:"Riccione"};
 
     console.log(body);
 
@@ -31,7 +31,7 @@ function fillMap() {
         accessToken: 'pk.eyJ1IjoicHVtcGtpbnNoZWFkIiwiYSI6ImNqa2NuM3l2cDFzdGYzcXA4MmoyZ2dsYWsifQ.FahVhmZj5RODSwGjl5-EaQ'
     }).addTo(osmMap);
 
-    new HttpClient(true).GET("http://localhost:8080/collect?", function(response) {
+    new HttpClient(true).GET("http://localhost:8080/api/pothole/", function(response) {
 
         var potholes = (JSON.parse(response)).content;
 

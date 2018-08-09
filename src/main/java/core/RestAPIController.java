@@ -28,6 +28,7 @@ import static utils.Utils.println;
  *
  */
 @RestController
+@RequestMapping("/api/pothole/")
 public class RestAPIController {
 
     private static final String ORS_API_KEY = "5b3ce3597851110001cf6248c396a2051da84b2ea36fa8e7f8f99d89";
@@ -76,8 +77,6 @@ public class RestAPIController {
             throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
         }
 
-        Set<Marker> results = new HashSet<>();
-
         OkHttpClient client = new OkHttpClient();
 
         Request routingService = new Request.Builder()
@@ -111,8 +110,6 @@ public class RestAPIController {
                 gc.ifPresent(vertices::add);
             }
 
-            Geometry geom = new Geometry("Linestring", vertices);
-
             Handle handler = JdbiSingleton.getInstance().open();
 
             Query q = handler.select(
@@ -134,6 +131,8 @@ public class RestAPIController {
                                 "markers.coordinates" +
                             ") < :dist;"
             );
+
+            Set<Marker> results = new HashSet<>();
 
             IntStream.range(1, vertices.size())
                     .mapToObj(i -> new Segment(vertices.get(i-1), vertices.get(i)))
@@ -161,6 +160,8 @@ public class RestAPIController {
 
             handler.close();
 
+            return new RESTResource<>(counter.incrementAndGet(), new ArrayList<>(results));
+
         } else {
 
             return new RESTResource<List<Marker>>(counter.incrementAndGet(), new ArrayList<>())
@@ -169,8 +170,6 @@ public class RestAPIController {
                                 "\"queryOutput\":" + bodyCache +
                             "}");
         }
-
-        return new RESTResource<>(counter.incrementAndGet(), new ArrayList<>(results));
     }
 
     @CrossOrigin(origins = "*")
@@ -245,15 +244,82 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/collect", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> collect(Model model) {
+
+        return stub(defaultCountry, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
+
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<List<Marker>> collect(
-            @RequestParam(value = "country", defaultValue = defaultCountry, required = false) String country,
-            @RequestParam(value = "region", defaultValue = defaultRegion, required = false) String region,
-            @RequestParam(value = "county", defaultValue = defaultTown, required = false) String county,
-            @RequestParam(value = "town", defaultValue = defaultTown,required = false) String town,
-            @RequestParam(value = "road", defaultValue = defaultRoad,required = false) String road,
-            Model model
-    ) {
+            @PathVariable(value = "country") String country,
+            Model model) {
+
+        return stub(country, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
+
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> collect(
+            @PathVariable(value = "country") String country,
+            @PathVariable(value = "region") String region,
+            Model model) {
+
+        return stub(country, region, defaultCounty, defaultTown, defaultRoad, model);
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> collect(
+            @PathVariable(value = "country") String country,
+            @PathVariable(value = "region") String region,
+            @PathVariable(value = "county") String county,
+            Model model) {
+
+        return stub(country, region, county, defaultTown, defaultRoad, model);
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> collect(
+            @PathVariable(value = "country") String country,
+            @PathVariable(value = "region") String region,
+            @PathVariable(value = "county") String county,
+            @PathVariable(value = "town") String town,
+            Model model) {
+
+        return stub(country, region, county, town, defaultRoad, model);
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/road/{road}", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> road(
+            @PathVariable(value = "road") String road,
+            Model model) {
+
+        return stub(defaultCountry, defaultRegion, defaultCounty, defaultTown, road, model);
+
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}/{road}", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<List<Marker>> collect(
+            @PathVariable(value = "country") String country,
+            @PathVariable(value = "region") String region,
+            @PathVariable(value = "county") String county,
+            @PathVariable(value = "town") String town,
+            @PathVariable(value = "road") String road,
+            Model model) {
+
+        return stub(country, region, county, town, road, model);
+
+    }
+
+
+    private RESTResource<List<Marker>> stub(String country, String region, String county, String town, String road, Model model) {
 
         Handle handler = JdbiSingleton.getInstance().open();
 
@@ -270,18 +336,26 @@ public class RestAPIController {
                             "'road',road" +
                         ") AS addressNode," +
                         "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
-                    "FROM markers" + addFilters(country, region, county, town, road) + ";"
+                    "FROM markers " + addFilters(country, region, county, town, road) + ";"
         );
+
+        if (!country.toLowerCase().equals(defaultCountry)) {
+            q = q.bind("country", Utils.stringify(country));
+        }
+
+        if (!region.toLowerCase().equals(defaultRegion)) {
+            q = q.bind("region", Utils.stringify(region));
+        }
+
+        if (!county.toLowerCase().equals(defaultCounty)) {
+            q = q.bind("county", Utils.stringify(county));
+        }
 
         if (!town.toLowerCase().equals(defaultTown)) {
             q = q.bind("town", Utils.stringify(town));
-        } else if (!county.toLowerCase().equals(defaultCounty)) {
-            q = q.bind("county", Utils.stringify(county));
-        } else if (!country.toLowerCase().equals(defaultCountry)) {
-            q = q.bind("country", Utils.stringify(country));
-        } else if (!region.toLowerCase().equals(defaultRegion)) {
-            q = q.bind("region", Utils.stringify(region));
-        } else if (!road.toLowerCase().equals(defaultRoad)) {
+        }
+
+        if (!road.toLowerCase().equals(defaultRoad)) {
             q = q.bind("road", Utils.stringify(road));
         }
 
@@ -312,25 +386,19 @@ public class RestAPIController {
 
         final List<String> filters = enabledFilters.entrySet().stream()
                 .filter(Map.Entry::getValue)
-                .map(e-> e.getKey() + " ILIKE :" + e.getKey().toLowerCase())
+                .map(e-> e.getKey() + " ILIKE :" + e.getKey().toLowerCase()+"")
                 .collect(Collectors.toList());
 
         final String filter = " WHERE " + String.join(" AND ", filters);
-
-        println(filters);
 
         return filters.isEmpty() ? "" : filter;
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.POST, value = "/add", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.POST, value = "/", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<Integer> add(@RequestBody String body, Model model) throws IOException {
 
         GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
-//
-        println(body);
-
-        Integer ret = -1;
 
         OkHttpClient client = new OkHttpClient();
 
@@ -359,7 +427,7 @@ public class RestAPIController {
 
             Handle handler = JdbiSingleton.getInstance().open();
 
-            ret = handler.createUpdate(
+            Integer ret = handler.createUpdate(
                     "INSERT " +
                             "INTO Markers(" +
                                 "coordinates, country, country_code, region, county, town, place, postcode, neighbourhood, road, house_number" +
@@ -392,8 +460,10 @@ public class RestAPIController {
                     .execute();
 
             handler.close();
-        }
 
-        return new RESTResource<>(counter.incrementAndGet(), ret);
+            return new RESTResource<>(counter.incrementAndGet(), ret);
+        } else {
+            return new RESTResource<>(counter.incrementAndGet(), -1);
+        }
     }
 }
