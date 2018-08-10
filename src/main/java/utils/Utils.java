@@ -5,9 +5,15 @@ import json.GeoCoordinates;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Utils {
+
+    public static final Pattern addressRegex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
+    public static final Pattern routingRegex = Pattern.compile("(?:\"geometry\":)\\{(.*?)\\}");
+    public static final Pattern arrayRegex = Pattern.compile("[+-]?\\d*\\.\\d*");
+    public static final Pattern matrixRegex = Pattern.compile("\\[([+-]?\\d*\\.\\d*,[+-]?\\d*\\.\\d*)\\]");
 
     public static String stringify(final String str) { return "'" + str + "'";}
 

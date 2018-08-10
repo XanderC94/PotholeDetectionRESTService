@@ -13,15 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
 import utils.Utils;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static utils.Utils.println;
+import static utils.Utils.*;
 
 /**
  *
@@ -32,11 +30,6 @@ import static utils.Utils.println;
 public class RestAPIController {
 
     private static final String ORS_API_KEY = "5b3ce3597851110001cf6248c396a2051da84b2ea36fa8e7f8f99d89";
-
-    private static final Pattern addressRegex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
-    private static final Pattern routingRegex = Pattern.compile("(?:\"geometry\":)\\{(.*?)\\}");
-    private static final Pattern arrayRegex = Pattern.compile("[+-]?\\d*\\.\\d*");
-    private static final Pattern matrixRegex = Pattern.compile("\\[([+-]?\\d*\\.\\d*,[+-]?\\d*\\.\\d*)\\]");
 
     private static final Gson gson = new GsonBuilder().create();
 
@@ -58,26 +51,8 @@ public class RestAPIController {
                                                           Model model) throws Exception {
 
         GeoCoordinates
-                gcFrom = new GeoCoordinates(0,0),
-                gcTo = new GeoCoordinates(0,0);
-
-        Matcher
-                mFrom = arrayRegex.matcher(from),
-                mTo = arrayRegex.matcher(to);
-
-        if (mFrom.find() && mTo.find()) {
-            gcFrom.setLat(Double.valueOf(mFrom.group(0)));
-            gcTo.setLat(Double.valueOf(mTo.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
-        }
-
-        if (mFrom.find() && mTo.find()) {
-            gcFrom.setLng(Double.valueOf(mFrom.group(0)));
-            gcTo.setLng(Double.valueOf(mTo.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
-        }
+                gcFrom = GeoCoordinates.fromString(from),
+                gcTo = GeoCoordinates.fromString(to);
 
         OkHttpClient client = new OkHttpClient();
 
@@ -180,26 +155,8 @@ public class RestAPIController {
                                                           @RequestParam("brc") String brc, Model model) throws Exception {
 
         GeoCoordinates
-                gcTLC = new GeoCoordinates(0,0),
-                gcBRC = new GeoCoordinates(0,0);
-
-        Matcher
-                mTLC = arrayRegex.matcher(tlc),
-                mBRC = arrayRegex.matcher(brc);
-
-        if (mTLC.find() && mBRC.find()) {
-            gcTLC.setLat(Double.valueOf(mTLC.group(0)));
-            gcBRC.setLat(Double.valueOf(mBRC.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
-        }
-
-        if (mTLC.find() && mBRC.find()) {
-            gcTLC.setLng(Double.valueOf(mTLC.group(0)));
-            gcBRC.setLng(Double.valueOf(mBRC.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like from=[x.y, w.z]&to=[x'.y', w'.z']");
-        }
+                gcTLC = GeoCoordinates.fromString(tlc),
+                gcBRC = GeoCoordinates.fromString(brc);
 
         Handle handler = JdbiSingleton.getInstance().open();
 
@@ -249,7 +206,7 @@ public class RestAPIController {
     @RequestMapping(method = RequestMethod.GET, value = "/", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<List<Marker>> collect(Model model) {
 
-        return stub(defaultCountry, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
+        return getResources(defaultCountry, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
 
     }
 
@@ -259,7 +216,7 @@ public class RestAPIController {
             @PathVariable(value = "country") String country,
             Model model) {
 
-        return stub(country, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
+        return getResources(country, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
 
     }
 
@@ -270,7 +227,7 @@ public class RestAPIController {
             @PathVariable(value = "region") String region,
             Model model) {
 
-        return stub(country, region, defaultCounty, defaultTown, defaultRoad, model);
+        return getResources(country, region, defaultCounty, defaultTown, defaultRoad, model);
     }
 
     @CrossOrigin(origins = "*")
@@ -281,7 +238,7 @@ public class RestAPIController {
             @PathVariable(value = "county") String county,
             Model model) {
 
-        return stub(country, region, county, defaultTown, defaultRoad, model);
+        return getResources(country, region, county, defaultTown, defaultRoad, model);
     }
 
     @CrossOrigin(origins = "*")
@@ -293,7 +250,7 @@ public class RestAPIController {
             @PathVariable(value = "town") String town,
             Model model) {
 
-        return stub(country, region, county, town, defaultRoad, model);
+        return getResources(country, region, county, town, defaultRoad, model);
     }
 
     @CrossOrigin(origins = "*")
@@ -302,7 +259,7 @@ public class RestAPIController {
             @PathVariable(value = "road") String road,
             Model model) {
 
-        return stub(defaultCountry, defaultRegion, defaultCounty, defaultTown, road, model);
+        return getResources(defaultCountry, defaultRegion, defaultCounty, defaultTown, road, model);
 
     }
 
@@ -316,12 +273,12 @@ public class RestAPIController {
             @PathVariable(value = "road") String road,
             Model model) {
 
-        return stub(country, region, county, town, road, model);
+        return getResources(country, region, county, town, road, model);
 
     }
 
 
-    private RESTResource<List<Marker>> stub(String country, String region, String county, String town, String road, Model model) {
+    private RESTResource<List<Marker>> getResources(String country, String region, String county, String town, String road, Model model) {
 
         Handle handler = JdbiSingleton.getInstance().open();
 
@@ -402,7 +359,7 @@ public class RestAPIController {
 
         GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
 
-        Optional<OSMAddressNode> reversedCoordinates = reverseGeoCoding(coordinates);
+        Optional<OSMAddressNode> reversedCoordinates = reverseGeoCode(coordinates);
 
         Handle handler = JdbiSingleton.getInstance().open();
 
@@ -447,31 +404,17 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/reverse", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<OSMAddressNode> reverseGeoCoding(@RequestParam("coordinates") String point, Model model) throws Exception {
+    public @ResponseBody RESTResource<OSMAddressNode> reverse(@RequestParam("coordinates") String point, Model model) throws Exception {
 
-        GeoCoordinates coordinates = new GeoCoordinates(0,0);
-
-        Matcher mCoordinates = arrayRegex.matcher(point);
-
-        if (mCoordinates.find()) {
-            coordinates.setLat(Double.valueOf(mCoordinates.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like coordinates=[x.y, w.z]");
-        }
-
-        if (mCoordinates.find()) {
-            coordinates.setLat(Double.valueOf(mCoordinates.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like coordinates=[x.y, w.z]");
-        }
+        GeoCoordinates coordinates = GeoCoordinates.fromString(point);
 
         return new RESTResource<>(
                 counter.incrementAndGet(),
-                reverseGeoCoding(coordinates).orElse(OSMAddressNode.emptyNode())
+                reverseGeoCode(coordinates).orElse(OSMAddressNode.emptyNode())
         );
     }
 
-    private Optional<OSMAddressNode> reverseGeoCoding (final GeoCoordinates coordinates) throws Exception {
+    private Optional<OSMAddressNode> reverseGeoCode(final GeoCoordinates coordinates) throws Exception {
 
         OkHttpClient client = new OkHttpClient();
 

@@ -3,6 +3,9 @@ package json;
 import utils.Utils;
 
 import java.util.Objects;
+import java.util.regex.Matcher;
+
+import static utils.Utils.arrayRegex;
 
 public class GeoCoordinates {
     private double lat;
@@ -59,5 +62,25 @@ public class GeoCoordinates {
     @Override
     public int hashCode() {
         return Objects.hash(getLat(), getLng(), getRadius());
+    }
+
+    public static GeoCoordinates fromString(final String gc) throws Exception{
+        GeoCoordinates coordinates = new GeoCoordinates(0,0);
+
+        Matcher mFrom = arrayRegex.matcher(gc);
+
+        if (mFrom.find()) {
+            coordinates.setLat(Double.valueOf(mFrom.group(0)));
+        } else {
+            throw new Exception("Coordinates must be like [x.y, w.z]");
+        }
+
+        if (mFrom.find()) {
+            coordinates.setLng(Double.valueOf(mFrom.group(0)));
+        } else {
+            throw new Exception("Coordinates must be like [x.y, w.z]");
+        }
+
+        return coordinates;
     }
 }
