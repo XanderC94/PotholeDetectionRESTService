@@ -182,4 +182,12 @@ public class OSMAddressNode {
     public int hashCode() {
         return Objects.hash(getHouseNumber(), getRoad(), getNeighbourhood(), getTown(), getCounty(), getRegion(), getPostcode(), getCountry(), getCountryCode(), getPlace());
     }
+
+    public static OSMAddressNode emptyNode() {
+        return new OSMAddressNode(0,
+                "", "", "",
+                "", "", "",
+                "", "", ""
+        );
+    }
 }

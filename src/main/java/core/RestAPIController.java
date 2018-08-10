@@ -48,6 +48,8 @@ public class RestAPIController {
 
     private final AtomicLong counter = new AtomicLong();
 
+
+
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/route", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<List<Marker>> route(@RequestParam("from") String from,
@@ -423,8 +425,6 @@ public class RestAPIController {
 
             OSMAddressNode node = gson.fromJson("{" + address + "}", OSMAddressNode.class);
 
-            println(node.toString());
-
             Handle handler = JdbiSingleton.getInstance().open();
 
             Integer ret = handler.createUpdate(
@@ -464,6 +464,54 @@ public class RestAPIController {
             return new RESTResource<>(counter.incrementAndGet(), ret);
         } else {
             return new RESTResource<>(counter.incrementAndGet(), -1);
+        }
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/reverse", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<OSMAddressNode> reverseGeoCoding(@RequestParam("coordinates") String point, Model model) throws Exception {
+        GeoCoordinates coordinates = new GeoCoordinates(0,0);
+
+        Matcher mCoordinates = arrayRegex.matcher(point);
+
+        if (mCoordinates.find()) {
+            coordinates.setLat(Double.valueOf(mCoordinates.group(0)));
+        } else {
+            throw new Exception("Coordinates must be like coordinates=[x.y, w.z]");
+        }
+
+        if (mCoordinates.find()) {
+            coordinates.setLat(Double.valueOf(mCoordinates.group(0)));
+        } else {
+            throw new Exception("Coordinates must be like coordinates=[x.y, w.z]");
+        }
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request reverseGeoCoding = new Request.Builder()
+                .url("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + coordinates.getLat() + "&lon=" + coordinates.getLng())
+                .build();
+
+        Response reverseGeoCodingResult = client.newCall(reverseGeoCoding).execute();
+
+        assert reverseGeoCodingResult.body() != null;
+        Matcher matcher = addressRegex.matcher(reverseGeoCodingResult.body().string());
+
+        if (matcher.find()) {
+            String address = matcher.group(1);
+
+            address = address.replaceFirst("address[0-9]+", "place");
+            address = address.replaceFirst("suburb", "town");
+            address = address.replaceFirst("village", "neighbourhood");
+            address = address.replaceFirst("country_code", "countryCode");
+            address = address.replaceFirst("house_number", "houseNumber");
+            address = address.replaceFirst("state", "region");
+
+            OSMAddressNode node = gson.fromJson("{" + address + "}", OSMAddressNode.class);
+
+            return new RESTResource<>(counter.incrementAndGet(), node);
+        } else {
+            return new RESTResource<>(counter.incrementAndGet(), OSMAddressNode.emptyNode());
         }
     }
 }
