@@ -398,39 +398,20 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "/", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Integer> add(@RequestBody String body, Model model) throws IOException {
+    public @ResponseBody RESTResource<Integer> add(@RequestBody String body, Model model) throws Exception {
 
         GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
 
-        OkHttpClient client = new OkHttpClient();
+        Optional<OSMAddressNode> reversedCoordinates = reverseGeoCoding(coordinates);
 
-        Request reverseGeoCoding = new Request.Builder()
-                .url("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + coordinates.getLat() + "&lon=" + coordinates.getLng())
-                .build();
+        Handle handler = JdbiSingleton.getInstance().open();
 
-        Response reverseGeoCodingResult = client.newCall(reverseGeoCoding).execute();
-
-        assert reverseGeoCodingResult.body() != null;
-        Matcher matcher = addressRegex.matcher(reverseGeoCodingResult.body().string());
-
-        if (matcher.find()){
-            String address = matcher.group(1);
-
-            address = address.replaceFirst("address[0-9]+", "place");
-            address = address.replaceFirst("suburb", "town");
-            address = address.replaceFirst("village", "neighbourhood");
-            address = address.replaceFirst("country_code", "countryCode");
-            address = address.replaceFirst("house_number", "houseNumber");
-            address = address.replaceFirst("state", "region");
-
-            OSMAddressNode node = gson.fromJson("{" + address + "}", OSMAddressNode.class);
-
-            Handle handler = JdbiSingleton.getInstance().open();
-
-            Integer ret = handler.createUpdate(
+        final Integer responseValue = reversedCoordinates
+                .map(node -> handler.createUpdate(
                     "INSERT " +
                             "INTO Markers(" +
-                                "coordinates, country, country_code, region, county, town, place, postcode, neighbourhood, road, house_number" +
+                                "coordinates, country, country_code, region, county, " +
+                                "town, place, postcode, neighbourhood, road, house_number" +
                             ") " +
                             "VALUES (" +
                                 "ST_SetSRID(ST_MakePoint(:lat, :lng), 4326)," +
@@ -445,31 +426,29 @@ public class RestAPIController {
                                 ":road," +
                                 ":house_number" +
                             ");"
-                    ).bind("lat", coordinates.getLat())
-                    .bind("lng", coordinates.getLng())
-                    .bind("country", Utils.stringify(node.getCountry()))
-                    .bind("country_code", Utils.stringify(node.getCountryCode()))
-                    .bind("region", Utils.stringify(node.getRegion()))
-                    .bind("county", Utils.stringify(node.getCounty()))
-                    .bind("town", Utils.stringify(node.getTown()))
-                    .bind("place", Utils.stringify(node.getPlace()))
-                    .bind("postcode", Utils.stringify(node.getPostcode()))
-                    .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
-                    .bind("road", Utils.stringify(node.getRoad()))
-                    .bind("house_number", node.getHouseNumber())
-                    .execute();
+                        ).bind("lat", coordinates.getLat()).bind("lng", coordinates.getLng())
+                            .bind("country", Utils.stringify(node.getCountry()))
+                            .bind("country_code", Utils.stringify(node.getCountryCode()))
+                            .bind("region", Utils.stringify(node.getRegion()))
+                            .bind("county", Utils.stringify(node.getCounty()))
+                            .bind("town", Utils.stringify(node.getTown()))
+                            .bind("place", Utils.stringify(node.getPlace()))
+                            .bind("postcode", Utils.stringify(node.getPostcode()))
+                            .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
+                            .bind("road", Utils.stringify(node.getRoad()))
+                            .bind("house_number", node.getHouseNumber())
+                                .execute()
+                ).orElse(-1);
 
-            handler.close();
+        handler.close();
 
-            return new RESTResource<>(counter.incrementAndGet(), ret);
-        } else {
-            return new RESTResource<>(counter.incrementAndGet(), -1);
-        }
+        return new RESTResource<>(counter.incrementAndGet(), responseValue);
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/reverse", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<OSMAddressNode> reverseGeoCoding(@RequestParam("coordinates") String point, Model model) throws Exception {
+
         GeoCoordinates coordinates = new GeoCoordinates(0,0);
 
         Matcher mCoordinates = arrayRegex.matcher(point);
@@ -486,6 +465,14 @@ public class RestAPIController {
             throw new Exception("Coordinates must be like coordinates=[x.y, w.z]");
         }
 
+        return new RESTResource<>(
+                counter.incrementAndGet(),
+                reverseGeoCoding(coordinates).orElse(OSMAddressNode.emptyNode())
+        );
+    }
+
+    private Optional<OSMAddressNode> reverseGeoCoding (final GeoCoordinates coordinates) throws Exception {
+
         OkHttpClient client = new OkHttpClient();
 
         Request reverseGeoCoding = new Request.Builder()
@@ -500,18 +487,16 @@ public class RestAPIController {
         if (matcher.find()) {
             String address = matcher.group(1);
 
-            address = address.replaceFirst("address[0-9]+", "place");
-            address = address.replaceFirst("suburb", "town");
-            address = address.replaceFirst("village", "neighbourhood");
-            address = address.replaceFirst("country_code", "countryCode");
-            address = address.replaceFirst("house_number", "houseNumber");
-            address = address.replaceFirst("state", "region");
+            address = address.replaceFirst("address[0-9]+", "place")
+                            .replaceFirst("suburb", "town")
+                            .replaceFirst("village", "neighbourhood")
+                            .replaceFirst("country_code", "countryCode")
+                            .replaceFirst("house_number", "houseNumber")
+                            .replaceFirst("state", "region");
 
-            OSMAddressNode node = gson.fromJson("{" + address + "}", OSMAddressNode.class);
-
-            return new RESTResource<>(counter.incrementAndGet(), node);
+            return Optional.of(gson.fromJson("{" + address + "}", OSMAddressNode.class));
         } else {
-            return new RESTResource<>(counter.incrementAndGet(), OSMAddressNode.emptyNode());
+            return Optional.empty();
         }
     }
 }
