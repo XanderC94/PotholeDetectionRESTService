@@ -4,7 +4,7 @@ import java.util.Objects;
 
 public class Marker {
 
-    private long MID = 0;
+    private long ID = 0;
     private long nDetections = 0;
     private GeoCoordinates coordinates;
     private OSMAddressNode addressNode;
@@ -13,7 +13,7 @@ public class Marker {
 
     public Marker(final long mid, final long n_detections, final GeoCoordinates coordinates, final OSMAddressNode addressNode){
 
-        this.MID = mid;
+        this.ID = mid;
         this.nDetections = n_detections;
         this.coordinates = coordinates;
         this.addressNode = addressNode;
@@ -32,8 +32,8 @@ public class Marker {
         this.addressNode = addressNode;
     }
 
-    public void setMID(long MID) {
-        this.MID = MID;
+    public void setID(long ID) {
+        this.ID = ID;
     }
 
     public void setnDetections(long nDetections) {
@@ -48,8 +48,8 @@ public class Marker {
         this.addressNode = addressNode;
     }
 
-    public long getMID() {
-        return MID;
+    public long getID() {
+        return ID;
     }
 
     public long getnDetections() {
@@ -67,7 +67,7 @@ public class Marker {
     @Override
     public String toString() {
         return "Marker{" +
-                "MID=" + MID +
+                "ID=" + ID +
                 ", nDetections=" + nDetections +
                 ", coordinates=" + coordinates +
                 ", addressNode=" + addressNode.toString() +

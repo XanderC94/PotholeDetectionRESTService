@@ -1,10 +1,3 @@
---create table Markers (
---    MID BigSerial PRIMARY KEY,
---	Coordinates geography(Point) UNIQUE NOT NULL,
---    N_Detections Bigserial CHECK (N_Detections > 0),
---    Location_Detection VarChar(50)
---);
-
 create table Markers (
     ID BigSerial PRIMARY KEY,
 	Coordinates geography(Point) UNIQUE NOT NULL,
@@ -19,6 +12,13 @@ create table Markers (
     Neighbourhood VarChar(50),
     Road VarChar(50) NOT NULL,
     House_Number INT CHECK (House_Number > -1)
+);
+
+create table Comments (
+    ID BigSerial PRIMARY KEY,
+    MID BIGINT REFERENCES Markers(ID),
+    comment VarChar(200),
+    posting_date DATE NOT NULL DEFAULT CURRENT_DATE
 );
 
 SELECT
@@ -53,7 +53,9 @@ json_build_object(
 ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates
 FROM markers
 WHERE markers.coordinates &&
-ST_Transform(
-ST_MakeEnvelope(43, 11, 45, 13, 4326),
-4326
-);
+    ST_Transform(
+        ST_MakeEnvelope(43, 11, 45, 13, 4326),
+        4326
+    );
+
+INSERT INTO Comments(MID, comment) VALUES (0,"commento");

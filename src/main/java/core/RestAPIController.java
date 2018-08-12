@@ -91,6 +91,7 @@ public class RestAPIController {
 
             Query q = handler.select(
                     "SELECT " +
+                            "ID," +
                             "json_build_object(" +
                                 "'country',country," +
                                 "'countryCode',country_code," +
@@ -129,6 +130,7 @@ public class RestAPIController {
                             ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
 
                             return new Marker(
+                                    rs.getInt("ID"), 0,
                                     new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
                                     gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
                             );
@@ -162,6 +164,7 @@ public class RestAPIController {
 
         Query q = handler.select(
                 "SELECT " +
+                        "ID," +
                         "json_build_object(" +
                             "'country',country," +
                             "'countryCode',country_code," +
@@ -193,6 +196,7 @@ public class RestAPIController {
                     ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
 
                     return new Marker(
+                            rs.getInt("ID"), 0,
                             new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
                             gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
                     );
@@ -284,6 +288,7 @@ public class RestAPIController {
 
         Query q = handler.select(
                 "SELECT " +
+                        "ID," +
                         "json_build_object(" +
                             "'country',country," +
                             "'countryCode',country_code," +
@@ -322,6 +327,7 @@ public class RestAPIController {
                 ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
 
                 return new Marker(
+                        rs.getInt("ID"), 0,
                         new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
                         gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
                 );
@@ -329,6 +335,8 @@ public class RestAPIController {
         ).list();
 
         handler.close();
+
+        println(res);
 
         return new RESTResource<>(counter.incrementAndGet(), res);
     }
@@ -400,6 +408,26 @@ public class RestAPIController {
         handler.close();
 
         return new RESTResource<>(counter.incrementAndGet(), responseValue);
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.PUT, value = "/{id}/", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<Integer> comment(@PathVariable Integer MID,
+                                                       @RequestBody String body,
+                                                       Model model) throws Exception {
+
+        final Comment comment = gson.fromJson(body, Comment.class);
+
+        Handle handler = JdbiSingleton.getInstance().open();
+
+        Integer res = handler.createUpdate("INSERT INTO Comments(mid, comment) VALUES (:mid, :comment);")
+                .bind("mid", comment.getMarkerID())
+                .bind("comment", stringify(comment.getComment()))
+                .execute();
+
+        handler.close();
+
+        return new RESTResource<>(counter.incrementAndGet(), res);
     }
 
     @CrossOrigin(origins = "*")
