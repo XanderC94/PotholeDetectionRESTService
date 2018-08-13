@@ -1,6 +1,6 @@
 create table Markers (
     ID BigSerial PRIMARY KEY,
-	Coordinates geography(Point) UNIQUE NOT NULL,
+    -- Coordinates geography(Point) UNIQUE NOT NULL,
     N_Detections Bigserial CHECK (N_Detections > 0),
     Country VarChar(60) NOT NULL,
     Country_Code VarChar(10) NOT NULL,
@@ -12,6 +12,14 @@ create table Markers (
     Neighbourhood VarChar(50),
     Road VarChar(50) NOT NULL,
     House_Number INT CHECK (House_Number > -1)
+);
+
+SELECT AddGeometryColumn(
+  'markers',
+  'coordinates',
+  4326,
+  'POINT',
+  2
 );
 
 create table Comments (

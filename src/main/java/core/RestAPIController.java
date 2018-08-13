@@ -226,18 +226,16 @@ public class RestAPIController {
         Matcher matcher1 = routingRegex.matcher(bodyCache);
 
         if (matcher1.find()) {
+
+            println(matcher1.group(1).trim());
+
             Matcher matcher2 = matrixRegex.matcher(matcher1.group(1).trim());
+
 
             List<GeoCoordinates> vertices = new ArrayList<>();
 
             while (matcher2.find()) {
-
-                Optional<GeoCoordinates> gc =
-                        Arrays.stream(matcher2.group(1).trim().split(","))
-                                .map(Double::valueOf).map(d -> new GeoCoordinates(d, 0.0))
-                                .reduce((lng, lat) -> new GeoCoordinates(lat.getLat(), lng.getLat()));
-
-                gc.ifPresent(vertices::add);
+                vertices.add(GeoCoordinates.fromString(matcher2.group(0)));
             }
 
             Handle handler = JdbiSingleton.getInstance().open();
@@ -292,7 +290,8 @@ public class RestAPIController {
 
             handler.close();
 
-            return new RESTResource<>(counter.incrementAndGet(), new ArrayList<>(results));
+            return new RESTResource<List<Marker>>(counter.incrementAndGet(), new ArrayList<>(results))
+                    .withInfo(bodyCache);
 
         } else {
 
@@ -361,13 +360,13 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/reverse", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<OSMAddressNode> reverse(@RequestParam("coordinates") String point, Model model) throws Exception {
+    public @ResponseBody RESTResource<OSMAddressNode> reverse(@RequestParam("coordinates") String coordinates, Model model) throws Exception {
 
-        GeoCoordinates coordinates = GeoCoordinates.fromString(point);
+        GeoCoordinates gc = GeoCoordinates.fromString(coordinates);
 
         return new RESTResource<>(
                 counter.incrementAndGet(),
-                reverseGeoCode(coordinates).orElse(OSMAddressNode.emptyNode())
+                reverseGeoCode(gc).orElse(OSMAddressNode.emptyNode())
         );
     }
 
@@ -451,21 +450,32 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.PUT, value = "/{id}", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Integer> comment(@PathVariable Integer MID,
+    public @ResponseBody RESTResource<Integer> comment(@PathVariable Integer id,
                                                        @RequestBody String body,
-                                                       Model model) throws Exception {
+                                                       Model model) throws Exception{
 
         final Comment comment = gson.fromJson(body, Comment.class);
 
+        if (comment.getMarkerID() != id) throw new Exception("Mismatch between PathVariable MID and body MID");
+
         Handle handler = JdbiSingleton.getInstance().open();
 
-        Integer res = handler.createUpdate("INSERT INTO Comments(mid, comment) VALUES (:mid, :comment);")
-                .bind("mid", comment.getMarkerID())
-                .bind("comment", stringify(comment.getComment()))
-                .execute();
+        String info = "";
+        Integer res = -1;
+
+        try {
+            res = handler.createUpdate("INSERT INTO Comments(mid, comment) VALUES (:mid, :comment);")
+                    .bind("mid", comment.getMarkerID())
+                    .bind("comment", stringify(comment.getComment()))
+                    .execute();
+
+        } catch(Exception ex) {
+            info = ex.getClass().getName();
+        }
 
         handler.close();
 
-        return new RESTResource<>(counter.incrementAndGet(), res);
+        return new RESTResource<>(counter.incrementAndGet(), res)
+                .withInfo(info);
     }
 }
