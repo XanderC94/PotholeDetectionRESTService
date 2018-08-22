@@ -305,12 +305,10 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/area", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("tlc") String tlc,
-                                                         @RequestParam("brc") String brc, Model model) throws Exception {
+    public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("origin") String origin,
+                                                         @RequestParam("radius") String radius, Model model) throws Exception {
 
-        GeoCoordinates
-                gcTLC = GeoCoordinates.fromString(tlc),
-                gcBRC = GeoCoordinates.fromString(brc);
+        GeoCoordinates gcOrigin = GeoCoordinates.fromString(origin);
 
         Handle handler = JdbiSingleton.getInstance().open();
 
@@ -327,20 +325,18 @@ public class RestAPIController {
                         "'neighbourhood',neighbourhood," +
                         "'road',road" +
                         ") AS addressNode," +
-                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates" +
+                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
                         "FROM markers " +
-                        "WHERE markers.coordinates && " +
-                        "ST_Transform(" +
-                        "ST_MakeEnvelope(:min_lat, :min_lng, :max_lat, :max_lng, 4326)," +
-                        "4326" + //SRID
-                        ");"
+                        "WHERE ST_DistanceSphere(" +
+                        "ST_SetSRID(ST_MakePoint(:lat_A, :lng_A), 4326)," +
+                        "markers.coordinates" +
+                        ") < :radius;"
         );
 
         // Need to bind
-        q.bind("lat_A", gcTLC.getLat())
-                .bind("lng_A", gcTLC.getLng())
-                .bind("lat_B", gcBRC.getLat())
-                .bind("lng_B", gcBRC.getLng());
+        q.bind("lat_A", gcOrigin.getLat())
+                .bind("lng_A", gcOrigin.getLng())
+                .bind("radius", radius);
 
         handler.close();
 
