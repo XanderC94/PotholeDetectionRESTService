@@ -5,7 +5,7 @@ import utils.Utils;
 import java.util.Objects;
 import java.util.regex.Matcher;
 
-import static utils.Utils.arrayRegex;
+import static utils.Utils.matrixRegex;
 
 public class GeoCoordinates {
     private double lat;
@@ -35,10 +35,10 @@ public class GeoCoordinates {
 
     @Override
     public String toString() {
-        return "GeoCoordinates{" +
-                lat + " N" + ", " +
-                lng + " E" +
-                '}';
+        return "[" +
+                this.getLat() + " N, " +
+                this.getLng() + "E" +
+                "]";
     }
 
     public double getRadius() {
@@ -64,23 +64,34 @@ public class GeoCoordinates {
         return Objects.hash(getLat(), getLng(), getRadius());
     }
 
-    public static GeoCoordinates fromString(final String gc) throws Exception{
+    public static GeoCoordinates fromString(final String gc) throws Exception {
+
         GeoCoordinates coordinates = new GeoCoordinates(0,0);
 
-        Matcher mFrom = arrayRegex.matcher(gc);
+        Matcher m = matrixRegex.matcher(gc.trim().toUpperCase());
 
-        if (mFrom.find()) {
-            coordinates.setLat(Double.valueOf(mFrom.group(0)));
-        } else {
-            throw new Exception("Coordinates must be like [x.y, w.z]");
-        }
+        if (m.find()) {
 
-        if (mFrom.find()) {
-            coordinates.setLng(Double.valueOf(mFrom.group(0)));
+            if (m.group(2).equals("E") && m.group(4).equals("E") ||
+                    m.group(2).equals("N") && m.group(4).equals("N")) {
+                throw new Exception("Duplicated " + m.group(2));
+            } else {
+                if (m.group(2).equals("E")) {
+                    coordinates.setLng(Double.valueOf(m.group(1)));
+                    coordinates.setLat(Double.valueOf(m.group(3)));
+                } else {
+                    coordinates.setLat(Double.valueOf(m.group(1)));
+                    coordinates.setLng(Double.valueOf(m.group(3)));
+                }
+            }
         } else {
-            throw new Exception("Coordinates must be like [x.y, w.z]");
+            throw new Exception("Coordinates must be like [x.y {N|E|}, w.z {E|N|}] ");
         }
 
         return coordinates;
+    }
+
+    public static GeoCoordinates empty() {
+        return new GeoCoordinates(0.0, 0.0);
     }
 }

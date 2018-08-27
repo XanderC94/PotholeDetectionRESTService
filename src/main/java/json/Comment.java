@@ -2,19 +2,18 @@ package json;
 
 public class Comment {
 
-    final int marker;
+    final int mid;
     final String comment;
     final String date;
 
-    public Comment(final int marker, final  String comment, final String date) {
-        this.marker = marker;
+    public Comment(final int mid, final  String comment, final String date) {
+        this.mid = mid;
         this.comment = comment;
         this.date = date;
     }
 
-
     public int getMarkerID() {
-        return marker;
+        return mid;
     }
 
     public String getComment() {
@@ -28,7 +27,7 @@ public class Comment {
     @Override
     public String toString() {
         return "Comment{" +
-                "marker=" + marker +
+                "mid=" + mid +
                 ", comment='" + comment + '\'' +
                 ", date='" + date + '\'' +
                 '}';
