@@ -422,6 +422,8 @@ public class RestAPIController {
                     .replaceFirst("house_number", "houseNumber")
                     .replaceFirst("state", "region");
 
+            Utils.println(address);
+
             return Optional.of(gson.fromJson("{" + address + "}", OSMAddressNode.class));
         } else {
             return Optional.empty();
@@ -431,6 +433,9 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<Integer> add(@RequestBody String body, Model model) throws Exception {
+
+
+        Utils.println(body);
 
         GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
 
