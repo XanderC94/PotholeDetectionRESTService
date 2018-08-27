@@ -6,7 +6,7 @@
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.0.xsd">
 
     <bean id="db" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="url" value="jdbc:postgresql://localhost:6666/PotholeDetectionSystemDB"/>
+        <property name="url" value="jdbc:postgresql://localhost:5432/PotholeDetectionSystemDB"/>
         <property name="username" value="pothole_system_web_service"/>
         <property name="password" value="pumpkins"/>
     </bean>

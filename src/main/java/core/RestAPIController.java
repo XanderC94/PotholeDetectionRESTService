@@ -2,6 +2,7 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import core.exceptions.MarkerNotFoundException;
 import json.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -38,6 +39,9 @@ public class RestAPIController {
     private final String defaultCountry = "none";
     private final String defaultRegion = "none";
     private final String defaultRoad = "none";
+
+    // a variation of 0.0000089 degrees corresponds approximately to 1m variation
+    private final double minumDegreesVariation = 0.0000089;
 
     private final AtomicLong counter = new AtomicLong();
 
@@ -105,6 +109,62 @@ public class RestAPIController {
         return getResources(country, region, county, town, road, model);
 
     }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/at", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<Marker> getMarkerAt(
+            @RequestParam("coordinates") String point,
+            Model model) throws Exception {
+
+        GeoCoordinates coordinates = GeoCoordinates.fromString(point);
+
+        Handle handler = JdbiSingleton.getInstance().open();
+
+        Query q = handler.select(
+                "SELECT " +
+                        "ID," +
+                        "json_build_object(" +
+                        "'country',country," +
+                        "'countryCode',country_code," +
+                        "'region',region," +
+                        "'county',county," +
+                        "'town',town," +
+                        "'place',place," +
+                        "'neighbourhood',neighbourhood," +
+                        "'road',road" +
+                        ") AS addressNode," +
+                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+                        "FROM markers " +
+                        "WHERE ST_Distance(coordinates, " +
+                                          "ST_SetSRID(ST_MakePoint(" + coordinates.getLat() + ", " + coordinates.getLng() + "), 4326)) " +
+                        "< " + minumDegreesVariation
+        );
+
+
+
+        List<Marker> res = q.map((rs, ctx) -> {
+                    ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
+
+                    return new Marker(
+                            rs.getInt("ID"), 0,
+                            new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
+                            gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
+                    );
+                }
+        ).list();
+
+        handler.close();
+
+        println(res);
+
+        if(res.isEmpty()){
+            throw new MarkerNotFoundException("No marker found in a range of 1 meter from the specified coordiantes: " +
+                    "[" + coordinates.getLat() + "N, " + coordinates.getLng() + "E]");
+        }
+
+        return  new RESTResource<Marker>(counter.incrementAndGet(), res.get(0));
+    }
+
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/road/{road_name}", headers="Content-Type=application/json; charset=utf-8")
