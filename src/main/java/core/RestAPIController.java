@@ -42,7 +42,7 @@ public class RestAPIController {
     private final AtomicLong counter = new AtomicLong();
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "")
     public @ResponseBody RESTResource<List<Marker>> collect(Model model) {
 
         return getResources(defaultCountry, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
@@ -50,7 +50,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/{country}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}")
     public @ResponseBody RESTResource<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             Model model) {
@@ -60,7 +60,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}")
     public @ResponseBody RESTResource<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
@@ -70,7 +70,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}")
     public @ResponseBody RESTResource<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
@@ -81,7 +81,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}")
     public @ResponseBody RESTResource<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
@@ -93,7 +93,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}/{road}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}/{road}")
     public @ResponseBody RESTResource<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
@@ -107,7 +107,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/road/{road_name}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/road/{road_name}")
     public @ResponseBody RESTResource<List<Marker>> road(
             @PathVariable(value = "road_name") String road,
             Model model) {
@@ -197,7 +197,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/route", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/route")
     public @ResponseBody RESTResource<List<Marker>> route(@RequestParam("from") String from,
                                                           @RequestParam("to") String to,
                                                           @RequestParam(value = "dist", required = false, defaultValue = "100") Integer dist,
@@ -304,7 +304,7 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/area", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/area")
     public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("origin") String origin,
                                                          @RequestParam("radius") String radius, Model model) throws Exception {
 
@@ -355,18 +355,51 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/reverse", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/geodecode")
+    public @ResponseBody RESTResource<GeoCoordinates> geodecode(@RequestParam("place") String place, Model model) throws Exception {
+
+        return new RESTResource<>(
+                counter.incrementAndGet(),
+                geoCoding(place).orElse(GeoCoordinates.empty())
+        );
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.GET, value = "/reverse")
     public @ResponseBody RESTResource<OSMAddressNode> reverse(@RequestParam("coordinates") String coordinates, Model model) throws Exception {
 
         GeoCoordinates gc = GeoCoordinates.fromString(coordinates);
 
         return new RESTResource<>(
                 counter.incrementAndGet(),
-                reverseGeoCode(gc).orElse(OSMAddressNode.emptyNode())
+                reverseGeoCoding(gc).orElse(OSMAddressNode.empty())
         );
     }
 
-    private Optional<OSMAddressNode> reverseGeoCode(final GeoCoordinates coordinates) throws Exception {
+    private Optional<GeoCoordinates> geoCoding(final String place) throws Exception {
+
+        OkHttpClient client = new OkHttpClient();
+
+        Request reverseGeoCoding = new Request.Builder()
+                .url("https://nominatim.openstreetmap.org/search/"+ place + "?format=jsonv2&limit=1")
+                .build();
+
+        Response reverseGeoCodingResult = client.newCall(reverseGeoCoding).execute();
+
+        assert reverseGeoCodingResult.body() != null;
+        final String bodyCache = reverseGeoCodingResult.body().string();
+        Matcher matcher = coordinatesRegex.matcher(bodyCache);
+
+        if (matcher.find()) {
+            String coordinates = matcher.group(0).replaceFirst("lon", "lng");
+
+            return Optional.of(gson.fromJson("{" + coordinates + "}", GeoCoordinates.class));
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<OSMAddressNode> reverseGeoCoding(final GeoCoordinates coordinates) throws Exception {
 
         OkHttpClient client = new OkHttpClient();
 
@@ -401,7 +434,7 @@ public class RestAPIController {
 
         GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
 
-        Optional<OSMAddressNode> reversedCoordinates = reverseGeoCode(coordinates);
+        Optional<OSMAddressNode> reversedCoordinates = reverseGeoCoding(coordinates);
 
         Handle handler = JdbiSingleton.getInstance().open();
 

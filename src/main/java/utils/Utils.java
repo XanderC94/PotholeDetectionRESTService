@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 public class Utils {
 
     public static final Pattern addressRegex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
+    public static final Pattern coordinatesRegex = Pattern.compile("\"lat\":\"[+-]?\\d*\\.\\d*\",\"lon\":\"[+-]?\\d*\\.\\d*\"");
     public static final Pattern routingRegex = Pattern.compile("(?:\"geometry\":\\s?)\\{\\s?(.*?)\\s?\\}");
     public static final Pattern arrayRegex = Pattern.compile("([+-]?\\d*\\.\\d*)\\s?([N|E]?)");
     public static final Pattern matrixRegex =

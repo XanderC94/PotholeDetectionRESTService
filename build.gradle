@@ -41,4 +41,5 @@ dependencies {
     compile "org.jdbi:jdbi3-postgres:3.0.0"
     compile "org.jdbi:jdbi3-spring4:3.0.0"
     testCompile "junit:junit"
+    testCompile "org.springframework.security:spring-security-test"
 }

@@ -5,9 +5,7 @@ import utils.Utils;
 import java.util.Objects;
 import java.util.regex.Matcher;
 
-import static utils.Utils.arrayRegex;
 import static utils.Utils.matrixRegex;
-import static utils.Utils.println;
 
 public class GeoCoordinates {
     private double lat;
@@ -37,10 +35,10 @@ public class GeoCoordinates {
 
     @Override
     public String toString() {
-        return "GeoCoordinates{" +
-                lat + " N" + ", " +
-                lng + " E" +
-                '}';
+        return "[" +
+                this.getLat() + " N, " +
+                this.getLng() + "E" +
+                "]";
     }
 
     public double getRadius() {
@@ -87,9 +85,13 @@ public class GeoCoordinates {
                 }
             }
         } else {
-            throw new Exception("Coordinates must be like [x.y {N|E|}, w.z {N|E|}] ");
+            throw new Exception("Coordinates must be like [x.y {N|E|}, w.z {E|N|}] ");
         }
 
         return coordinates;
+    }
+
+    public static GeoCoordinates empty() {
+        return new GeoCoordinates(0.0, 0.0);
     }
 }
