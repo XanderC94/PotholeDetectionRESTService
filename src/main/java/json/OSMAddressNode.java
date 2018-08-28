@@ -33,20 +33,20 @@ import java.util.Objects;
  */
 public class OSMAddressNode {
 
-    private String country;
-    private String countryCode;
-    private String region; // like "Emilia-Romagna"
-    private String county; // like "RN"
-    private String city;
-    private String district;
-    private String suburb;
-    private String town;
-    private String village;
-    private String neighbourhood;
-    private String place; // address29
-    private String postcode;
-    private String road;
-    private String houseNumber;
+    private final String country;
+    private final String countryCode;
+    private final String region; // like "Emilia-Romagna"
+    private final String county; // like "RN"
+    private final String city;
+    private final String district;
+    private final String suburb;
+    private final String town;
+    private final String village;
+    private final String neighbourhood;
+    private final String place; // address29
+    private final String postcode;
+    private final String road;
+    private final String houseNumber;
 
     public OSMAddressNode(final String houseNumber,
                           final String road,
@@ -79,59 +79,11 @@ public class OSMAddressNode {
         this.place = place;
     }
 
-    public void setHouseNumber(String houseNumber) {
-        this.houseNumber = houseNumber;
-    }
-
-    public void setRoad(String road) {
-        this.road = road;
-    }
-
-    public void setNeighbourhood(String neighbourhood) {
-        this.neighbourhood = neighbourhood;
-    }
-
-    public void setTown(String town) {
-        this.town = town;
-    }
-
-    public void setCounty(String county) {
-        this.county = county;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
-    public void setPostcode(String postcode) {
-        this.postcode = postcode;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
-    public void setCountryCode(String countryCode) {
-        this.countryCode = countryCode;
-    }
-
-    public void setPlace(String place) {
-        this.place = place;
-    }
-
-    public void setCity(String city) { this.city = city; }
-
     public String getDistrict() { return district; }
-
-    public void setDistrict(String district) { this.district = district; }
 
     public String getSuburb() { return suburb; }
 
-    public void setSuburb(String suburb) { this.suburb = suburb; }
-
     public String getVillage() { return village; }
-
-    public void setVillage(String village) { this.village = village; }
 
     public String getHouseNumber() {
         return houseNumber;

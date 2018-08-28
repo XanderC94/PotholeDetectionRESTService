@@ -9,9 +9,9 @@ import java.util.Optional;
 
 public class GeoCoordinates {
 
-    private Double lng;
-    private Double lat;
-    private Double radius = Utils.EarthRadius;
+    private final Double lng;
+    private final Double lat;
+    private final Double radius = Utils.EarthRadius;
 
     public GeoCoordinates(final Double lng, final Double lat) {
         this.lat = lat;
@@ -22,16 +22,8 @@ public class GeoCoordinates {
         return lat;
     }
 
-    public void setLat(Double lat) {
-        this.lat = lat;
-    }
-
     public Double getLng() {
         return lng;
-    }
-
-    public void setLng(Double lng) {
-        this.lng = lng;
     }
 
     public Double[] toLngLat() {
@@ -53,10 +45,6 @@ public class GeoCoordinates {
 
     public Double getRadius() {
         return radius;
-    }
-
-    public void setRadius(Double radius) {
-        this.radius = radius;
     }
 
     @Override
