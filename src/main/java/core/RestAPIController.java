@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
 import utils.Utils;
 
+import javax.rmi.CORBA.Util;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -410,7 +411,10 @@ public class RestAPIController {
         Response reverseGeoCodingResult = client.newCall(reverseGeoCoding).execute();
 
         assert reverseGeoCodingResult.body() != null;
-        Matcher matcher = addressRegex.matcher(reverseGeoCodingResult.body().string());
+        final String bodyCache = reverseGeoCodingResult.body().string();
+        Matcher matcher = addressRegex.matcher(bodyCache);
+
+        Utils.println(bodyCache);
 
         if (matcher.find()) {
             String address = matcher.group(1);
