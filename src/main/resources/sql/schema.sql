@@ -1,17 +1,21 @@
 create table Markers (
     ID BigSerial PRIMARY KEY,
     -- Coordinates geography(Point) UNIQUE NOT NULL,
-    N_Detections Bigserial CHECK (N_Detections > 0),
+    N_Detections INTEGER CHECK (N_Detections >= 0) default 1,
     Country VarChar(60) NOT NULL,
     Country_Code VarChar(10) NOT NULL,
     Region VarChar(50) NOT NULL,
     County VarChar(50),
+    City VarChar(50),
+    District VarChar(50),
+    Suburb VarChar(50),
     Town VarChar(100) NOT NULL,
+    Village VarChar(50),
     Place VarChar(50),
     Postcode VarChar(10),
     Neighbourhood VarChar(50),
     Road VarChar(50) NOT NULL,
-    House_Number INT CHECK (House_Number > -1)
+    House_Number VarChar(10)
 );
 
 SELECT AddGeometryColumn(
@@ -36,7 +40,11 @@ SELECT
         'countryCode',country_code,
         'region',region,
         'county',county,
+        'city',city,
+        'district',district,
+        'suburb',suburb,
         'town',town,
+        'village',village,
         'place',place,
         'neighbourhood',neighbourhood,
         'road',road
@@ -47,15 +55,19 @@ FROM markers;
 SELECT
     ID,
 	json_build_object(
-		'country',country,
-		'countryCode',country_code,
-		'region',region,
-		'county',county,
-		'town',town,
-		'place',place,
-		'neighbourhood',neighbourhood,
-		'road',road
-	) AS addressNode,
+        'country',country,
+        'countryCode',country_code,
+        'region',region,
+        'county',county,
+        'city',city,
+        'district',district,
+        'suburb',suburb,
+        'town',town,
+        'village',village,
+        'place',place,
+        'neighbourhood',neighbourhood,
+        'road',road
+    ) AS addressNode,
 	ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates
 FROM markers
 WHERE ST_DistanceSphere(
@@ -70,7 +82,11 @@ SELECT
         'countryCode',country_code,
         'region',region,
         'county',county,
+        'city',city,
+        'district',district,
+        'suburb',suburb,
         'town',town,
+        'village',village,
         'place',place,
         'neighbourhood',neighbourhood,
         'road',road
@@ -89,15 +105,19 @@ INSERT INTO Comments(MID, comment) VALUES (0,"commento");
 SELECT
     ID,
 	json_build_object(
-		'country',country,
-		'countryCode',country_code,
-		'region',region,
-		'county',county,
-		'town',town,
-		'place',place,
-		'neighbourhood',neighbourhood,
-		'road',road
-	) AS addressNode,
+        'country',country,
+        'countryCode',country_code,
+        'region',region,
+        'county',county,
+        'city',city,
+        'district',district,
+        'suburb',suburb,
+        'town',town,
+        'village',village,
+        'place',place,
+        'neighbourhood',neighbourhood,
+        'road',road
+    ) AS addressNode,
 	ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates
 FROM markers
 WHERE ST_DistanceSphere(

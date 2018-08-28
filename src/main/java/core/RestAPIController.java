@@ -15,11 +15,13 @@ import rest.RESTResource;
 import utils.Utils;
 
 import javax.rmi.CORBA.Util;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static utils.Utils.*;
 
@@ -122,23 +124,27 @@ public class RestAPIController {
         Handle handler = JdbiSingleton.getInstance().open();
 
         Query q = handler.select(
-                "SELECT " +
-                        "ID," +
-                        "json_build_object(" +
-                        "'country',country," +
-                        "'countryCode',country_code," +
-                        "'region',region," +
-                        "'county',county," +
-                        "'town',town," +
-                        "'place',place," +
-                        "'neighbourhood',neighbourhood," +
-                        "'road',road" +
-                        ") AS addressNode," +
-                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
-                        "FROM markers " +
-                        "WHERE ST_Distance(coordinates, " +
-                                          "ST_SetSRID(ST_MakePoint(" + coordinates.getLat() + ", " + coordinates.getLng() + "), 4326)) " +
-                        "< " + minumDegreesVariation
+            "SELECT " +
+                    "ID," +
+                    "json_build_object(" +
+                    "'country',country," +
+                    "'countryCode',country_code," +
+                    "'region',region," +
+                    "'county',county," +
+                    "'city',city," +
+                    "'district',district," +
+                    "'suburb',suburb," +
+                    "'town',town," +
+                    "'village',village," +
+                    "'place',place," +
+                    "'neighbourhood',neighbourhood," +
+                    "'road',road"+
+                    ") AS addressNode," +
+                    "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+                "FROM markers " +
+                "WHERE ST_Distance(coordinates, " +
+                                  "ST_SetSRID(ST_MakePoint(" + coordinates.getLat() + ", " + coordinates.getLng() + "), 4326)) " +
+                "< " + minumDegreesVariation
         );
 
         List<Marker> res = q.map((rs, ctx) -> {
@@ -184,14 +190,18 @@ public class RestAPIController {
                 "SELECT " +
                         "ID," +
                         "json_build_object(" +
-                            "'country',country," +
-                            "'countryCode',country_code," +
-                            "'region',region," +
-                            "'county',county," +
-                            "'town',town," +
-                            "'place',place," +
-                            "'neighbourhood',neighbourhood," +
-                            "'road',road" +
+                        "'country',country," +
+                        "'countryCode',country_code," +
+                        "'region',region," +
+                        "'county',county," +
+                        "'city',city," +
+                        "'district',district," +
+                        "'suburb',suburb," +
+                        "'town',town," +
+                        "'village',village," +
+                        "'place',place," +
+                        "'neighbourhood',neighbourhood," +
+                        "'road',road"+
                         ") AS addressNode," +
                         "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
                     "FROM markers " + addFilters(country, region, county, town, road) + ";"
@@ -300,24 +310,28 @@ public class RestAPIController {
             Handle handler = JdbiSingleton.getInstance().open();
 
             Query q = handler.select(
-                    "SELECT " +
-                            "ID," +
-                            "json_build_object(" +
-                            "'country',country," +
-                            "'countryCode',country_code," +
-                            "'region',region," +
-                            "'county',county," +
-                            "'town',town," +
-                            "'place',place," +
-                            "'neighbourhood',neighbourhood," +
-                            "'road',road" +
-                            ") AS addressNode," +
-                            "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
-                            "FROM markers " +
-                            "WHERE ST_DistanceSphere(" +
+                "SELECT " +
+                        "ID," +
+                        "json_build_object(" +
+                        "'country',country," +
+                        "'countryCode',country_code," +
+                        "'region',region," +
+                        "'county',county," +
+                        "'city',city," +
+                        "'district',district," +
+                        "'suburb',suburb," +
+                        "'town',town," +
+                        "'village',village," +
+                        "'place',place," +
+                        "'neighbourhood',neighbourhood," +
+                        "'road',road"+
+                        ") AS addressNode," +
+                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+                    "FROM markers " +
+                    "WHERE ST_DistanceSphere(" +
                             "ST_SetSRID(ST_MakeLine(ST_MakePoint(:lat_A, :lng_A), ST_MakePoint(:lat_B, :lng_B)), 4326)," +
                             "markers.coordinates" +
-                            ") < :dist;"
+                        ") < :dist;"
             );
 
             Set<Marker> results = new HashSet<>();
@@ -331,10 +345,10 @@ public class RestAPIController {
 
                         // Need to bind
                         q.bind("lat_A", v.getA().getLat())
-                                .bind("lng_A", v.getA().getLng())
-                                .bind("lat_B", v.getB().getLat())
-                                .bind("lng_B", v.getB().getLng())
-                                .bind("dist", dist);
+                            .bind("lng_A", v.getA().getLng())
+                            .bind("lat_B", v.getB().getLat())
+                            .bind("lng_B", v.getB().getLng())
+                            .bind("dist", dist);
 
                         results.addAll(q.map((rs, ctx) -> {
                             ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
@@ -365,50 +379,64 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/area")
     public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("origin") String origin,
-                                                         @RequestParam("radius") String radius, Model model) throws Exception {
+                                                         @RequestParam("radius") Integer radius, Model model) throws Exception {
+
+        println(origin);
 
         GeoCoordinates gcOrigin = GeoCoordinates.fromString(origin);
 
         Handle handler = JdbiSingleton.getInstance().open();
 
         Query q = handler.select(
-                "SELECT " +
-                        "ID," +
-                        "json_build_object(" +
+            "SELECT " +
+                    "ID," +
+                    "json_build_object(" +
                         "'country',country," +
                         "'countryCode',country_code," +
                         "'region',region," +
                         "'county',county," +
+                        "'city',city," +
+                        "'district',district," +
+                        "'suburb',suburb," +
                         "'town',town," +
+                        "'village',village," +
                         "'place',place," +
                         "'neighbourhood',neighbourhood," +
-                        "'road',road" +
-                        ") AS addressNode," +
-                        "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
-                        "FROM markers " +
-                        "WHERE ST_DistanceSphere(" +
+                        "'road',road"+
+                    ") AS addressNode," +
+                    "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+                "FROM markers " +
+                "WHERE ST_DistanceSphere(" +
                         "ST_SetSRID(ST_MakePoint(:lat_A, :lng_A), 4326)," +
                         "markers.coordinates" +
-                        ") < :radius;"
+                    ") < :radius;"
         );
 
         // Need to bind
         q.bind("lat_A", gcOrigin.getLat())
-                .bind("lng_A", gcOrigin.getLng())
-                .bind("radius", radius);
+            .bind("lng_A", gcOrigin.getLng())
+            .bind("radius", radius);
+
+        List<Marker> res = new ArrayList<>();
+
+        List<Utils.Nuple<Integer, String, String>> resultSets =
+                q.map((rs, ctx) -> Utils.nuple(
+                    rs.getInt("ID"),
+                    rs.getString("coordinates"),
+                    rs.getString("addressNode")
+                )).list();
+
+        for (Nuple<Integer, String, String> n : resultSets) {
+            res.add(new Marker(
+                Long.valueOf(n.getX()), 0,
+                GeoCoordinates.fromString(n.getY()),
+                gson.fromJson(n.getZ(), OSMAddressNode.class)
+            ));
+        }
 
         handler.close();
 
-        List<Marker> res = q.map((rs, ctx) -> {
-                    ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
-
-                    return new Marker(
-                            rs.getInt("ID"), 0,
-                            new GeoCoordinates((Double) tmp.get(0), (Double) tmp.get(1)),
-                            gson.fromJson(rs.getString("addressNode"), OSMAddressNode.class)
-                    );
-                }
-        ).list();
+        Utils.println(res);
 
         return new RESTResource<>(counter.incrementAndGet(), res);
     }
@@ -472,17 +500,14 @@ public class RestAPIController {
         final String bodyCache = reverseGeoCodingResult.body().string();
         Matcher matcher = addressRegex.matcher(bodyCache);
 
-        Utils.println(bodyCache);
-
         if (matcher.find()) {
             String address = matcher.group(1);
 
             address = address.replaceFirst("address[0-9]+", "place")
-                    .replaceFirst("suburb", "town")
-                    .replaceFirst("village", "neighbourhood")
                     .replaceFirst("country_code", "countryCode")
                     .replaceFirst("house_number", "houseNumber")
-                    .replaceFirst("state", "region");
+                    .replaceFirst("state", "region")
+                    .replaceFirst("city_district", "district");
 
             Utils.println(address);
 
@@ -495,7 +520,6 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<Integer> add(@RequestBody String body, Model model) throws Exception {
-
 
         Utils.println(body);
 
@@ -510,7 +534,8 @@ public class RestAPIController {
                     "INSERT " +
                             "INTO Markers(" +
                                 "coordinates, country, country_code, region, county, " +
-                                "town, place, postcode, neighbourhood, road, house_number" +
+                                "city, district, suburb, town, village, " +
+                                "place, postcode, neighbourhood, road, house_number" +
                             ") " +
                             "VALUES (" +
                                 "ST_SetSRID(ST_MakePoint(:lat, :lng), 4326)," +
@@ -518,7 +543,11 @@ public class RestAPIController {
                                 ":country_code," +
                                 ":region," +
                                 ":county," +
+                                ":city," +
+                                ":district," +
+                                ":suburb," +
                                 ":town," +
+                                ":village," +
                                 ":place," +
                                 ":postcode," +
                                 ":neighbourhood," +
@@ -530,7 +559,11 @@ public class RestAPIController {
                             .bind("country_code", Utils.stringify(node.getCountryCode()))
                             .bind("region", Utils.stringify(node.getRegion()))
                             .bind("county", Utils.stringify(node.getCounty()))
+                            .bind("city", Utils.stringify(node.getCounty()))
+                            .bind("district", Utils.stringify(node.getDistrict()))
+                            .bind("suburb", Utils.stringify(node.getSuburb()))
                             .bind("town", Utils.stringify(node.getTown()))
+                            .bind("village", Utils.stringify(node.getVillage()))
                             .bind("place", Utils.stringify(node.getPlace()))
                             .bind("postcode", Utils.stringify(node.getPostcode()))
                             .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
