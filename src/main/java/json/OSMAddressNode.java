@@ -43,9 +43,11 @@ public class OSMAddressNode {
     private String country;
     private String countryCode;
     private String place; // address29
+    private String city;
 
     public OSMAddressNode(final String houseNumber,
                           final String road,
+                          final String city,
                           final String neighbourhood,
                           final String town,
                           final String county,
@@ -56,6 +58,7 @@ public class OSMAddressNode {
                           final String place) {
         this.houseNumber = houseNumber;
         this.road = road;
+        this.city = city;
         this.neighbourhood = neighbourhood;
         this.town = town;
         this.county = county;
@@ -106,12 +109,17 @@ public class OSMAddressNode {
         this.place = place;
     }
 
+    public void setCity(String city) {
+        this.city = city;
+    }
+
     @Override
     public String toString() {
         return "OSMAddressNode{" +
                 "houseNumber='" + houseNumber + '\'' +
                 ", road='" + road + '\'' +
                 ", neighbourhood='" + neighbourhood + '\'' +
+                ", city='" + city + '\'' +
                 ", town='" + town + '\'' +
                 ", county='" + county + '\'' +
                 ", region='" + region + '\'' +
@@ -160,6 +168,10 @@ public class OSMAddressNode {
 
     public String getPlace() { return place; }
 
+    public String getCity() {
+        return city;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -184,7 +196,7 @@ public class OSMAddressNode {
 
     public static OSMAddressNode empty() {
         return new OSMAddressNode("",
-                "", "", "",
+                "", "", "", "",
                 "", "", "",
                 "", "", ""
         );
