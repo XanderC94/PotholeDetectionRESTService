@@ -141,8 +141,6 @@ public class RestAPIController {
                         "< " + minumDegreesVariation
         );
 
-
-
         List<Marker> res = q.map((rs, ctx) -> {
                     ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
 
