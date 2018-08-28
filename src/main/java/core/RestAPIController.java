@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
 import utils.Utils;
 
-import javax.rmi.CORBA.Util;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -529,20 +528,24 @@ public class RestAPIController {
                                 ":house_number" +
                             ");"
                         ).bind("lat", coordinates.getLat()).bind("lng", coordinates.getLng())
-                            .bind("country", Utils.stringify(node.getCountry()))
-                            .bind("country_code", Utils.stringify(node.getCountryCode()))
-                            .bind("region", Utils.stringify(node.getRegion()))
-                            .bind("county", Utils.stringify(node.getCounty()))
-                            .bind("town", Utils.stringify(node.getTown()))
-                            .bind("place", Utils.stringify(node.getPlace()))
-                            .bind("postcode", Utils.stringify(node.getPostcode()))
-                            .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
-                            .bind("road", Utils.stringify(node.getRoad()))
-                            .bind("house_number", node.getHouseNumber())
-                                .execute()
+                         .bind("country", Utils.stringify(node.getCountry()))
+                         .bind("country_code", Utils.stringify(node.getCountryCode()))
+                         .bind("region", Utils.stringify(node.getRegion()))
+                         .bind("county", Utils.stringify(node.getCounty()))
+                         .bind("town", Utils.stringify(node.getTown()))
+                         .bind("place", Utils.stringify(node.getPlace()))
+                         .bind("postcode", Utils.stringify(node.getPostcode()))
+                         .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
+                         .bind("road", Utils.stringify(node.getRoad()))
+                         .bind("house_number", node.getHouseNumber())
+                         .execute()
                 ).orElse(-1);
 
         handler.close();
+
+        if(responseValue == -1) {
+            throw new DBQueryExecutionException("Error occured during the marker adding");
+        }
 
         return new RESTResource<>(counter.incrementAndGet(), responseValue);
     }
