@@ -2,8 +2,10 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import core.exceptions.DBQueryExecutionException;
 import core.exceptions.FormatException;
 import core.exceptions.MarkerNotFoundException;
+import core.exceptions.WrongBodyDataException;
 import json.*;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
@@ -332,6 +334,10 @@ public class RestAPIController {
 
         handler.close();
 
+        if(responseValue == -1) {
+            throw new DBQueryExecutionException("Error occured during the marker adding");
+        }
+
         return new RESTResource<>(counter.incrementAndGet(), responseValue);
     }
 
@@ -343,16 +349,23 @@ public class RestAPIController {
 
         final Comment comment = gson.fromJson(body, Comment.class);
 
-        if (comment.getMarkerID() != id) throw new Exception("Mismatch between PathVariable MID and body MID");
+        if (comment.getMarkerID() != id) {
+            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + comment.getMarkerID() + ")");
+        }
 
         Handle handler = JdbiSingleton.getInstance().open();
 
-        Integer res = handler
-                .createUpdate(SQL.addCommentQuery)
-                .bind("mid", comment.getMarkerID())
-                .bind("comment", stringify(comment.getComment()))
-                .execute();
 
+        Integer res;
+        try {
+            res = handler
+                    .createUpdate(SQL.addCommentQuery)
+                    .bind("mid", comment.getMarkerID())
+                    .bind("comment", stringify(comment.getComment()))
+                    .execute();
+        } catch (Exception e) {
+            throw new DBQueryExecutionException("Unable to execute statement on the DB");
+        }
 
         handler.close();
 

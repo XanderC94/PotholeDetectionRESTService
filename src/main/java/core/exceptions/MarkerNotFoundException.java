@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.util.NoSuchElementException;
 
 /**
- * MarkerNotFoundException is throwed when a marker request on the DB return an empty result
+ * MarkerNotFoundException is thrown when a marker request on the DB return an empty result
  */
 @ResponseStatus(value=HttpStatus.NOT_FOUND, reason="No markers Found")
 public class MarkerNotFoundException extends NoSuchElementException {
