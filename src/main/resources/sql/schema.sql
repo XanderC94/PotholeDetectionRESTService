@@ -24,8 +24,8 @@ SELECT AddGeometryColumn(
 
 create table Comments (
     ID BigSerial PRIMARY KEY,
-    MID BIGINT REFERENCES Markers(ID),
-    comment VarChar(200),
+    marker_id BIGINT REFERENCES Markers(ID),
+    text VarChar(200),
     posting_date DATE NOT NULL DEFAULT CURRENT_DATE
 );
 
@@ -84,7 +84,7 @@ WHERE
         4326
     );
 
-INSERT INTO Comments(MID, comment) VALUES (0,"commento");
+INSERT INTO Comments(MID, text) VALUES (0,"commento");
 
 SELECT
     ID,

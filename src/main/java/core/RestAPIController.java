@@ -2,13 +2,16 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import core.exceptions.DBQueryExecutionException;
 import core.exceptions.MarkerNotFoundException;
+import core.exceptions.WrongBodyDataException;
 import json.*;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
+import org.jdbi.v3.core.statement.UnableToExecuteStatementException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
@@ -550,21 +553,32 @@ public class RestAPIController {
 
         final Comment comment = gson.fromJson(body, Comment.class);
 
-        if (comment.getMarkerID() != id) throw new Exception("Mismatch between PathVariable MID and body MID");
+        if (comment.getMarkerID() != id) {
+            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + comment.getMarkerID() + ")");
+        }
 
         Handle handler = JdbiSingleton.getInstance().open();
 
         String info = "";
         Integer res = -1;
 
-        try {
-            res = handler.createUpdate("INSERT INTO Comments(mid, comment) VALUES (:mid, :comment);")
-                    .bind("mid", comment.getMarkerID())
-                    .bind("comment", stringify(comment.getComment()))
-                    .execute();
 
-        } catch(Exception ex) {
-            info = ex.getClass().getName();
+        try {
+            if(comment.getDate() != "") {
+                Date commentDate = new Date(Long.valueOf(comment.getDate()));
+                res = handler.createUpdate("INSERT INTO Comments(marker_id, text, posting_date) VALUES (:mid, :commentText, :date);")
+                        .bind("mid", comment.getMarkerID())
+                        .bind("commentText", stringify(comment.getText()))
+                        .bind("date", commentDate)
+                        .execute();
+            } else {
+                res = handler.createUpdate("INSERT INTO Comments(marker_id, text) VALUES (:mid, :commentText);")
+                        .bind("mid", comment.getMarkerID())
+                        .bind("commentText", stringify(comment.getText()))
+                        .execute();
+            }
+        } catch(UnableToExecuteStatementException ex) {
+            throw new DBQueryExecutionException("Unable to execute statement on the DB");
         }
 
         handler.close();
