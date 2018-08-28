@@ -31,10 +31,9 @@ import java.util.Objects;
  *  }
  *
  */
-
 public class OSMAddressNode {
 
-    private int houseNumber;
+    private String houseNumber;
     private String road;
     private String neighbourhood;
     private String town;
@@ -45,7 +44,7 @@ public class OSMAddressNode {
     private String countryCode;
     private String place; // address29
 
-    public OSMAddressNode(final int houseNumber,
+    public OSMAddressNode(final String houseNumber,
                           final String road,
                           final String neighbourhood,
                           final String town,
@@ -67,7 +66,7 @@ public class OSMAddressNode {
         this.place = place;
     }
 
-    public void setHouseNumber(int houseNumber) {
+    public void setHouseNumber(String houseNumber) {
         this.houseNumber = houseNumber;
     }
 
@@ -123,7 +122,7 @@ public class OSMAddressNode {
                 '}';
     }
 
-    public int getHouseNumber() {
+    public String getHouseNumber() {
         return houseNumber;
     }
 
@@ -166,7 +165,7 @@ public class OSMAddressNode {
         if (this == o) return true;
         if (!(o instanceof OSMAddressNode)) return false;
         OSMAddressNode that = (OSMAddressNode) o;
-        return getHouseNumber() == that.getHouseNumber() &&
+        return Objects.equals(getHouseNumber(), that.getHouseNumber()) &&
                 Objects.equals(getRoad(), that.getRoad()) &&
                 Objects.equals(getNeighbourhood(), that.getNeighbourhood()) &&
                 Objects.equals(getTown(), that.getTown()) &&
@@ -184,7 +183,7 @@ public class OSMAddressNode {
     }
 
     public static OSMAddressNode empty() {
-        return new OSMAddressNode(0,
+        return new OSMAddressNode("",
                 "", "", "",
                 "", "", "",
                 "", "", ""
