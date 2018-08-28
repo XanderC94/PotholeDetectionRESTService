@@ -361,7 +361,7 @@ public class RestAPIController {
             res = handler
                     .createUpdate(SQL.addCommentQuery)
                     .bind("mid", comment.getMarkerID())
-                    .bind("comment", stringify(comment.getComment()))
+                    .bind("comment", stringify(comment.getText()))
                     .execute();
         } catch (Exception e) {
             throw new DBQueryExecutionException("Unable to execute statement on the DB");
