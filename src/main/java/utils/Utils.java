@@ -2,10 +2,11 @@ package utils;
 
 import json.GeoCoordinates;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -45,52 +46,89 @@ public class Utils {
     // Earth’s radius, sphere
     public static double EarthRadius = 6378137.0;
 
-    public static class Nuple<X, Y, Z> {
-        private final X x;
-        private final Y y;
-        private final Z z;
+    public static <X, Y, Z> Nuple<X, Y, Z> nuple(final X x, final Y y, final Z z) {
+        return new Nuple<>(x,y,z);
+    }
 
-        public Nuple(final X x, final Y y, final Z z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
+    public enum FORMAT implements Function<Double[], GeoCoordinates> {
+        LAT_LNG((a, b) -> new GeoCoordinates(b, a)),
+        LNG_LAT(GeoCoordinates::new);
 
+        private final BiFunction<Double, Double, GeoCoordinates> formatter;
 
-        public Z getZ() {
-            return z;
-        }
-
-        public Y getY() {
-            return y;
-        }
-
-        public X getX() {
-            return x;
+        FORMAT(final BiFunction<Double, Double, GeoCoordinates> formatter) {
+            this.formatter = formatter;
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Nuple)) return false;
-            Nuple<?, ?, ?> nuple = (Nuple<?, ?, ?>) o;
-            return Objects.equals(getX(), nuple.getX()) &&
-                    Objects.equals(getY(), nuple.getY()) &&
-                    Objects.equals(getZ(), nuple.getZ());
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(getX(), getY(), getZ());
-        }
-
-        @Override
-        public String toString() {
-            return "(" + x + y + z + ')';
+        public GeoCoordinates apply(final Double[] coordinates) {
+            return this.formatter.apply(coordinates[0], coordinates[1]);
         }
     }
 
-    public static <X, Y, Z> Nuple<X, Y, Z> nuple(final X x, final Y y, final Z z) {
-        return new Nuple<>(x,y,z);
+    public enum CHECK_CODE implements Function<String, String> {
+
+        OK("Format is Correct"),
+        DUPLICATED("Duplicated"),
+        BAD_FORMAT("Coordinates must be like [x.y {N|E|}, w.z {E|N|}], instead got"),
+        FORMATS_MISMATCH("Format mismatch");
+
+        private String value;
+
+        CHECK_CODE(final String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String apply(String s) {
+            return String.join(" ", this.value, s);
+        }
+    }
+
+    /**
+     * Check the given string representation of N-E coordinates
+     *
+     * @param gc
+     * @return formatted coordinates, info and found format
+     */
+    public static Tuple<Optional<GeoCoordinates>, String> checkCoordinatesFormat(final String gc) {
+        Matcher m = matrixRegex.matcher(gc.trim().toUpperCase());
+        Optional<GeoCoordinates> coordinates;
+        String code;
+
+        if (m.find()) {
+
+            final Double
+                    a = Double.valueOf(m.group(1)),
+                    b = Double.valueOf(m.group(3));
+
+            final Boolean
+                    aIsLat = m.group(2).equals("N"),
+                    aIsLng = m.group(2).equals("E"),
+                    bIsLat = m.group(4).equals("N"),
+                    bIsLng = m.group(4).equals("E"),
+                    isStandard = m.group(2).equals("") && m.group(4).equals("");
+
+            if (aIsLat && bIsLat || aIsLng && bIsLng) {
+                // Check Duplicated if N|E are enforced
+                coordinates = Optional.empty();
+                code = CHECK_CODE.DUPLICATED.apply(m.group(2));
+
+            } else {
+
+                if (aIsLng && bIsLat || isStandard) { // standard LNG_LAT
+                    coordinates = Optional.of(new GeoCoordinates(a, b));
+                } else { // enforced LAT_LNG => saved as LNG_LAT
+                    coordinates =  Optional.of(new GeoCoordinates(b, a));
+                }
+
+                code = CHECK_CODE.OK.apply(coordinates.toString());
+            }
+
+            return new Tuple<>(coordinates, code);
+
+        } else {
+            return new Tuple<>(Optional.empty(), CHECK_CODE.BAD_FORMAT.apply(gc));
+        }
     }
 }

@@ -94,3 +94,99 @@
 
         return new GeoCoordinates(Math.toDegrees(mLat), Math.toDegrees(mLng));
     }
+
+(AREA)
+"SELECT " +
+"ID," +
+"json_build_object(" +
+"'country',country," +
+"'countryCode',country_code," +
+"'region',region," +
+"'county',county," +
+"'city',city," +
+"'district',district," +
+"'suburb',suburb," +
+"'town',town," +
+"'village',village," +
+"'place',place," +
+"'neighbourhood',neighbourhood," +
+"'road',road"+
+") AS addressNode," +
+"ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+"FROM markers " +
+"WHERE ST_DistanceSphere(" +
+"ST_SetSRID(ST_MakePoint(:x, :y), 4326)," +
+"markers.coordinates" +
+") < :radius;"
+
+(COMMENTS)
+"INSERT INTO Comments(mid, comment) VALUES (:mid, :comment);"
+
+(MARKERS INSERT)
+"INSERT " +
+"INTO Markers(" +
+"coordinates, country, country_code, region, county, " +
+"city, district, suburb, town, village, " +
+"place, postcode, neighbourhood, road, house_number" +
+") " +
+"VALUES (" +
+"ST_SetSRID(ST_MakePoint(:x, :y), 4326)," +
+":country," +
+":country_code," +
+":region," +
+":county," +
+":city," +
+":district," +
+":suburb," +
+":town," +
+":village," +
+":place," +
+":postcode," +
+":neighbourhood," +
+":road," +
+":house_number" +
+");"
+
+(ROUTE)
+"SELECT " +
+"ID," +
+"json_build_object(" +
+"'country',country," +
+"'countryCode',country_code," +
+"'region',region," +
+"'county',county," +
+"'city',city," +
+"'district',district," +
+"'suburb',suburb," +
+"'town',town," +
+"'village',village," +
+"'place',place," +
+"'neighbourhood',neighbourhood," +
+"'road',road"+
+") AS addressNode," +
+"ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+"FROM markers " +
+"WHERE ST_DistanceSphere(" +
+"ST_SetSRID(ST_MakeLine(ST_MakePoint(:x_A, :y_A), ST_MakePoint(:x_B, :y_B)), 4326)," +
+"markers.coordinates" +
+") < :dist;"
+
+(MARKERS SELECT)
+"SELECT " +
+"ID," +
+"json_build_object(" +
+"'country',country," +
+"'countryCode',country_code," +
+"'region',region," +
+"'county',county," +
+"'city',city," +
+"'district',district," +
+"'suburb',suburb," +
+"'town',town," +
+"'village',village," +
+"'place',place," +
+"'neighbourhood',neighbourhood," +
+"'road',road"+
+") AS addressNode," +
+"ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates " +
+"FROM markers "
