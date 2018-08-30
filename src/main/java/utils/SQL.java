@@ -33,8 +33,8 @@ public class SQL {
         ),
         COMMENTS("Comments",
                 Arrays.asList(
-                        "mid",
-                        "comment",
+                        "marker_id",
+                        "text",
                         "posting_date"
                 )
         );
@@ -127,11 +127,11 @@ public class SQL {
     public static String addCommentQuery =
             String.join(" ", "INSERT", "INTO", TABLE.COMMENTS.table_name ,"(",
                     TABLE.COMMENTS.columns.stream()
-                            .filter(s -> !s.equals("id") && !s.equals("posting_date"))
+                            .filter(s -> !s.equals("marker_id") && !s.equals("posting_date"))
                             .collect(Collectors.joining(","))
                     ,")", "VALUES", "(",
                     TABLE.COMMENTS.columns.stream()
-                            .filter(s -> !s.equals("id") && !s.equals("posting_date"))
+                            .filter(s -> !s.equals("marker_id") && !s.equals("posting_date"))
                             .map(s -> ":"+s)
                             .collect(Collectors.joining(","))
                     ,");");

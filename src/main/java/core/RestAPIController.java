@@ -12,11 +12,7 @@ import org.jdbi.v3.core.statement.Query;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
-import utils.HTTP;
-import utils.Nuple;
-import utils.SQL;
-import utils.Tuple;
-import utils.Utils;
+import utils.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -313,7 +309,7 @@ public class RestAPIController {
 
         final Integer responseValue = reversedCoordinates
                 .map(node -> handler
-                        .createUpdate(SQL.addCommentQuery)
+                        .createUpdate(SQL.addMarkerQuery)
                         .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
                         .bind("country", Utils.stringify(node.getCountry()))
                         .bind("country_code", Utils.stringify(node.getCountryCode()))
