@@ -356,8 +356,8 @@ public class RestAPIController {
         try {
             res = handler
                     .createUpdate(SQL.addCommentQuery)
-                    .bind("mid", comment.getMarkerID())
-                    .bind("comment", stringify(comment.getText()))
+                    .bind("marker_id", comment.getMarkerID())
+                    .bind("text", stringify(comment.getText()))
                     .execute();
         } catch (Exception e) {
             throw new DBQueryExecutionException("Unable to execute statement on the DB");
@@ -456,8 +456,8 @@ public class RestAPIController {
 
         // Need to bind
         q.bind("y", origin.getLat())
-                .bind("x", origin.getLng())
-                .bind("radius", searchRadius);
+         .bind("x", origin.getLng())
+         .bind("radius", searchRadius);
 
         List<Marker> res = this.resolveQuery(q);
 
