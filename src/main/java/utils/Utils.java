@@ -2,9 +2,11 @@ package utils;
 
 import json.GeoCoordinates;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -13,9 +15,9 @@ public class Utils {
     public static final Pattern addressRegex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
     public static final Pattern coordinatesRegex = Pattern.compile("\"lat\":\"[+-]?\\d*\\.\\d*\",\"lon\":\"[+-]?\\d*\\.\\d*\"");
     public static final Pattern routingRegex = Pattern.compile("(?:\"geometry\":\\s?)\\{\\s?(.*?)\\s?\\}");
-    public static final Pattern arrayRegex = Pattern.compile("([+-]?\\d*\\.\\d*)\\s?([N|E]?)");
+//    public static final Pattern arrayRegex = Pattern.compile("([+-]?\\d*\\.\\d*)\\s?([N|E]?)");
     public static final Pattern matrixRegex =
-            Pattern.compile("\\[\\s?([+-]?\\d*\\.\\d*)\\s?([N|E]?)\\s?,\\s?([+-]?\\d*\\.\\d*)\\s?([N|E]?)\\s?\\]");
+            Pattern.compile("\\[\\s?([+-]?\\d+\\.?\\d+)\\s?([N|E]?)\\s?,\\s?([+-]?\\d+\\.?\\d+)\\s?([N|E]?)\\s?\\]");
 
     public static String stringify(final String str) { return "'" + str + "'";}
 
@@ -44,99 +46,89 @@ public class Utils {
     // Earth’s radius, sphere
     public static double EarthRadius = 6378137.0;
 
+    public static <X, Y, Z> Nuple<X, Y, Z> nuple(final X x, final Y y, final Z z) {
+        return new Nuple<>(x,y,z);
+    }
+
+    public enum FORMAT implements Function<Double[], GeoCoordinates> {
+        LAT_LNG((a, b) -> new GeoCoordinates(b, a)),
+        LNG_LAT(GeoCoordinates::new);
+
+        private final BiFunction<Double, Double, GeoCoordinates> formatter;
+
+        FORMAT(final BiFunction<Double, Double, GeoCoordinates> formatter) {
+            this.formatter = formatter;
+        }
+
+        @Override
+        public GeoCoordinates apply(final Double[] coordinates) {
+            return this.formatter.apply(coordinates[0], coordinates[1]);
+        }
+    }
+
+    public enum CHECK_CODE implements Function<String, String> {
+
+        OK("Format is Correct"),
+        DUPLICATED("Duplicated"),
+        BAD_FORMAT("Coordinates must be like [x.y {N|E|}, w.z {E|N|}], instead got"),
+        FORMATS_MISMATCH("Format mismatch");
+
+        private String value;
+
+        CHECK_CODE(final String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String apply(String s) {
+            return String.join(" ", this.value, s);
+        }
+    }
+
     /**
-     * This uses the ‘haversineDistance’ formula to calculate the great-circle
-     * distance between two points – that is, the shortest distance over the earth’s surface –
-     * giving an ‘as-the-crow-flies’ distance between the points
-     * (ignoring any hills they fly over, of course!) in Meters.
+     * Check the given string representation of N-E coordinates
      *
-     * @param A
-     * @param B
-     * @return The distance between A and B
+     * @param gc
+     * @return formatted coordinates, info and found format
      */
-    public static double haversineDistance(final GeoCoordinates A, final GeoCoordinates B) {
+    public static Tuple<Optional<GeoCoordinates>, String> checkCoordinatesFormat(final String gc) {
+        Matcher m = matrixRegex.matcher(gc.trim().toUpperCase());
+        Optional<GeoCoordinates> coordinates;
+        String code;
 
-        double dLat = Math.toRadians(B.getLat() - A.getLat());
-        double dLng = Math.toRadians(B.getLng() - A.getLng());
+        if (m.find()) {
 
-        GeoCoordinates rA = new GeoCoordinates(Math.toRadians(A.getLat()), Math.toRadians(A.getLng()));
-        GeoCoordinates rB = new GeoCoordinates(Math.toRadians(B.getLat()), Math.toRadians(B.getLng()));
+            final Double
+                    a = Double.valueOf(m.group(1)),
+                    b = Double.valueOf(m.group(3));
 
-        double a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(rA.getLat()) * Math.cos(rB.getLat()) *
-                        Math.sin(dLng/2) * Math.sin(dLng/2);
+            final Boolean
+                    aIsLat = m.group(2).equals("N"),
+                    aIsLng = m.group(2).equals("E"),
+                    bIsLat = m.group(4).equals("N"),
+                    bIsLng = m.group(4).equals("E"),
+                    isStandard = m.group(2).equals("") && m.group(4).equals("");
 
-        double c = 2.0 * Math.atan2(Math.sqrt(a), Math.sqrt(1.0 - a));
+            if (aIsLat && bIsLat || aIsLng && bIsLng) {
+                // Check Duplicated if N|E are enforced
+                coordinates = Optional.empty();
+                code = CHECK_CODE.DUPLICATED.apply(m.group(2));
 
-        return EarthRadius * c;
-    }
+            } else {
 
-    public static GeoCoordinates cartesian2DRotation(final GeoCoordinates A, final double theta) {
+                if (aIsLng && bIsLat || isStandard) { // standard LNG_LAT
+                    coordinates = Optional.of(new GeoCoordinates(a, b));
+                } else { // enforced LAT_LNG => saved as LNG_LAT
+                    coordinates =  Optional.of(new GeoCoordinates(b, a));
+                }
 
-        return new GeoCoordinates(
-                A.getLat()*Math.sin(theta) + A.getLng()*Math.cos(theta), // y
-                A.getLat()*Math.cos(theta) - A.getLng()*Math.sin(theta) // x
-        );
-    }
+                code = CHECK_CODE.OK.apply(coordinates.toString());
+            }
 
-    public static GeoCoordinates rodriguezRotation(final GeoCoordinates A, final GeoCoordinates O, final double theta) {
+            return new Tuple<>(coordinates, code);
 
-        double[] v = {
-                Math.sin(A.getLat())*Math.cos(A.getLng()),
-                Math.sin(A.getLat())*Math.sin(A.getLng()),
-                Math.cos(A.getLat()),
-        };
-
-        double[] k = {
-                Math.sin(O.getLat())*Math.cos(O.getLng()),
-                Math.sin(O.getLat())*Math.sin(O.getLng()),
-                Math.cos(O.getLat())
-        };
-
-        double[][] K = {
-                { 0,                   -k[2]*Math.sin(theta), k[1]*Math.sin(theta)},
-                { k[2]*Math.sin(theta), 0,                   -k[0]*Math.sin(theta)},
-                {-k[1]*Math.sin(theta), k[0]*Math.sin(theta), 0                   }
-        };
-
-        double[][] K2 = {
-            {0,                               k[2]*k[2]*(1 - Math.cos(theta)), k[1]*k[1]*(1 - Math.cos(theta))},
-            {k[2]*k[2]*(1 - Math.cos(theta)), 0,                               k[0]*k[0]*(1 - Math.cos(theta))},
-            {k[1]*k[1]*(1 - Math.cos(theta)), k[0]*k[0]*(1 - Math.cos(theta)), 0                              }
-        };
-
-        double[][] R = {
-                {1,                K[0][1]*K2[0][1], K[0][2]*K2[0][2]},
-                {K[1][0]*K2[1][0], 1,                K[1][2]*K2[1][2]},
-                {K[2][0]*K2[2][0], K[2][1]*K2[2][1], 1               }
-        };
-
-        double[] b = {
-               v[0]*(R[0][0] + R[0][1] + R[0][2]),
-               v[1]*(R[1][0] + R[1][1] + R[1][2]),
-               v[2]*(R[2][0] + R[2][1] + R[2][2])
-        };
-
-        double tanLat = b[0] / b[1];
-        double tanLng = Math.sqrt(b[0]*b[0] + b[1]*b[1]) / b[2];
-
-        return new GeoCoordinates(Math.toDegrees(Math.atan(tanLat)), Math.toDegrees(Math.atan(tanLng)));
-
-    }
-
-    public static GeoCoordinates midPoint(final GeoCoordinates A, final GeoCoordinates B){
-
-        double dLng = Math.toRadians(B.getLng() - A.getLng());
-
-        //convert to radians
-        GeoCoordinates rA = new GeoCoordinates(Math.toRadians(A.getLat()), Math.toRadians(A.getLng()));
-        GeoCoordinates rB = new GeoCoordinates(Math.toRadians(B.getLat()), Math.toRadians(B.getLng()));
-
-        double Mx = Math.cos(rB.getLat()) * Math.cos(dLng);
-        double My = Math.cos(rB.getLat()) * Math.sin(dLng);
-        double mLat = Math.atan2(Math.sin(rA.getLat()) + Math.sin(rB.getLat()), Math.sqrt((Math.cos(rA.getLat()) + Mx) * (Math.cos(rA.getLat()) + Mx) + My * My));
-        double mLng = rA.getLng() + Math.atan2(My, Math.cos(rA.getLat()) + Mx);
-
-        return new GeoCoordinates(Math.toDegrees(mLat), Math.toDegrees(mLng));
+        } else {
+            return new Tuple<>(Optional.empty(), CHECK_CODE.BAD_FORMAT.apply(gc));
+        }
     }
 }

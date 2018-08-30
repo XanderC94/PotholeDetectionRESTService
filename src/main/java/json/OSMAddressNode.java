@@ -33,17 +33,20 @@ import java.util.Objects;
  */
 public class OSMAddressNode {
 
-    private String houseNumber;
-    private String road;
-    private String neighbourhood;
-    private String town;
-    private String county; // like "RN"
-    private String region; // like "Emilia-Romagna"
-    private String postcode;
-    private String country;
-    private String countryCode;
-    private String place; // address29
-    private String city;
+    private final String country;
+    private final String countryCode;
+    private final String region; // like "Emilia-Romagna"
+    private final String county; // like "RN"
+    private final String city;
+    private final String district;
+    private final String suburb;
+    private final String town;
+    private final String village;
+    private final String neighbourhood;
+    private final String place; // address29
+    private final String postcode;
+    private final String road;
+    private final String houseNumber;
 
     public OSMAddressNode(final String houseNumber,
                           final String road,
@@ -55,7 +58,11 @@ public class OSMAddressNode {
                           final String postcode,
                           final String country,
                           final String countryCode,
+                          final String district,
+                          final String suburb,
+                          final String village,
                           final String place) {
+
         this.houseNumber = houseNumber;
         this.road = road;
         this.city = city;
@@ -66,69 +73,17 @@ public class OSMAddressNode {
         this.postcode = postcode;
         this.country = country;
         this.countryCode = countryCode;
+        this.district = district;
+        this.suburb = suburb;
+        this.village = village;
         this.place = place;
     }
 
-    public void setHouseNumber(String houseNumber) {
-        this.houseNumber = houseNumber;
-    }
+    public String getDistrict() { return district; }
 
-    public void setRoad(String road) {
-        this.road = road;
-    }
+    public String getSuburb() { return suburb; }
 
-    public void setNeighbourhood(String neighbourhood) {
-        this.neighbourhood = neighbourhood;
-    }
-
-    public void setTown(String town) {
-        this.town = town;
-    }
-
-    public void setCounty(String county) {
-        this.county = county;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
-    public void setPostcode(String postcode) {
-        this.postcode = postcode;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
-    public void setCountryCode(String countryCode) {
-        this.countryCode = countryCode;
-    }
-
-    public void setPlace(String place) {
-        this.place = place;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    @Override
-    public String toString() {
-        return "OSMAddressNode{" +
-                "houseNumber='" + houseNumber + '\'' +
-                ", road='" + road + '\'' +
-                ", neighbourhood='" + neighbourhood + '\'' +
-                ", city='" + city + '\'' +
-                ", town='" + town + '\'' +
-                ", county='" + county + '\'' +
-                ", region='" + region + '\'' +
-                ", postcode='" + postcode + '\'' +
-                ", country='" + country + '\'' +
-                ", countryCode='" + countryCode + '\'' +
-                ", place='" + place + '\'' +
-                '}';
-    }
+    public String getVillage() { return village; }
 
     public String getHouseNumber() {
         return houseNumber;
@@ -173,32 +128,59 @@ public class OSMAddressNode {
     }
 
     @Override
+    public String toString() {
+        return "OSMAddressNode{" +
+                "houseNumber='" + houseNumber + '\'' +
+                ", road='" + road + '\'' +
+                ", neighbourhood='" + neighbourhood + '\'' +
+                ", city='" + city + '\'' +
+                ", town='" + town + '\'' +
+                ", county='" + county + '\'' +
+                ", region='" + region + '\'' +
+                ", postcode='" + postcode + '\'' +
+                ", country='" + country + '\'' +
+                ", countryCode='" + countryCode + '\'' +
+                ", place='" + place + '\'' +
+                '}';
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof OSMAddressNode)) return false;
         OSMAddressNode that = (OSMAddressNode) o;
-        return Objects.equals(getHouseNumber(), that.getHouseNumber()) &&
-                Objects.equals(getRoad(), that.getRoad()) &&
-                Objects.equals(getNeighbourhood(), that.getNeighbourhood()) &&
-                Objects.equals(getTown(), that.getTown()) &&
-                Objects.equals(getCounty(), that.getCounty()) &&
-                Objects.equals(getRegion(), that.getRegion()) &&
-                Objects.equals(getPostcode(), that.getPostcode()) &&
-                Objects.equals(getCountry(), that.getCountry()) &&
+        return Objects.equals(getCountry(), that.getCountry()) &&
                 Objects.equals(getCountryCode(), that.getCountryCode()) &&
-                Objects.equals(getPlace(), that.getPlace());
+                Objects.equals(getRegion(), that.getRegion()) &&
+                Objects.equals(getCounty(), that.getCounty()) &&
+                Objects.equals(getCity(), that.getCity()) &&
+                Objects.equals(getDistrict(), that.getDistrict()) &&
+                Objects.equals(getSuburb(), that.getSuburb()) &&
+                Objects.equals(getTown(), that.getTown()) &&
+                Objects.equals(getVillage(), that.getVillage()) &&
+                Objects.equals(getNeighbourhood(), that.getNeighbourhood()) &&
+                Objects.equals(getPlace(), that.getPlace()) &&
+                Objects.equals(getPostcode(), that.getPostcode()) &&
+                Objects.equals(getRoad(), that.getRoad()) &&
+                Objects.equals(getHouseNumber(), that.getHouseNumber());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getHouseNumber(), getRoad(), getNeighbourhood(), getTown(), getCounty(), getRegion(), getPostcode(), getCountry(), getCountryCode(), getPlace());
+        return Objects.hash(
+                getCountry(), getCountryCode(), getRegion(),
+                getCounty(), getCity(), getDistrict(), getSuburb(),
+                getTown(), getVillage(), getNeighbourhood(), getPlace(),
+                getPostcode(), getRoad(), getHouseNumber()
+        );
     }
 
     public static OSMAddressNode empty() {
         return new OSMAddressNode("",
                 "", "", "", "",
                 "", "", "",
-                "", "", ""
+                "", "",
+                "", "", "", ""
         );
     }
 }

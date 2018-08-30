@@ -2,9 +2,9 @@ package json;
 
 public class Comment {
 
-    final int markerId;
-    final String text;
-    final String date;
+    private final int markerId;
+    private final String text;
+    private final String date;
 
     public Comment(final int markerId, final  String text, final String date) {
         this.markerId = markerId;
