@@ -367,7 +367,8 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/area")
     public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("origin") String origin,
-                                                         @RequestParam("radius") String radius, Model model) throws Exception {
+                                                         @RequestParam("radius") double radius,
+                                                         Model model) throws Exception {
 
         GeoCoordinates gcOrigin = GeoCoordinates.fromString(origin);
 
@@ -396,10 +397,9 @@ public class RestAPIController {
 
         // Need to bind
         q.bind("lat_A", gcOrigin.getLat())
-                .bind("lng_A", gcOrigin.getLng())
-                .bind("radius", radius);
+         .bind("lng_A", gcOrigin.getLng())
+         .bind("radius", radius);
 
-        handler.close();
 
         List<Marker> res = q.map((rs, ctx) -> {
                     ArrayList tmp = gson.fromJson(rs.getString("coordinates"), ArrayList.class);
@@ -411,6 +411,8 @@ public class RestAPIController {
                     );
                 }
         ).list();
+
+        handler.close();
 
         return new RESTResource<>(counter.incrementAndGet(), res);
     }
