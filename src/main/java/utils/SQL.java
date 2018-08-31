@@ -1,51 +1,71 @@
 package utils;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-@SuppressWarnings("SpellCheckingInspection")
+import static utils.SQL.COMMENT.MARKER_ID;
+import static utils.SQL.COMMENT.POSTING_DATE;
+import static utils.SQL.MARKER.*;
+import static utils.Utils.println;
+
+@SuppressWarnings({"SpellCheckingInspection", "unused", "FieldCanBeLocal"})
 public class SQL {
 
-    private enum TABLE {
-        MARKERS("Markers",
-                Arrays.asList(
-                        "id",
-                        "n_detections",
-                        "country",
-                        "country_code",
-                        "region",
-                        "county",
-                        "city",
-                        "district",
-                        "suburb",
-                        "town",
-                        "village",
-                        "place",
-                        "postcode",
-                        "neighbourhood",
-                        "road",
-                        "house_number",
-                        "coordinates"
-                )
-        ),
-        COMMENTS("Comments",
-                Arrays.asList(
-                        "marker_id",
-                        "text",
-                        "posting_date"
-                )
-        );
+    public enum TABLE{
+        MARKERS,
+        COMMENTS;
 
-        private final String table_name;
-        private final List<String> columns;
+        public String signature() {
+            String lowercaseName = this.name().toLowerCase();
+            return lowercaseName.replace(
+                    lowercaseName.toCharArray()[0],
+                    this.name().toCharArray()[0]
+            );
+        }
 
-        TABLE(final String table_name, final List<String> columns) {
+    }
 
-            this.table_name = table_name;
-            this.columns = columns;
+    public enum MARKER {
+        ID,
+        N_DETECTIONS,
+        COUNTRY,
+        COUNTRY_CODE,
+        REGION,
+        COUNTY,
+        CITY,
+        DISTRICT,
+        SUBURB,
+        TOWN,
+        VILLAGE,
+        PLACE,
+        POSTCODE,
+        NEIGHBOURHOOD,
+        ROAD,
+        HOUSE_NUMBER,
+        COORDINATES;
+
+        public String signature() {
+            return this.name().toLowerCase();
+        }
+
+        public static Stream<MARKER> fields() {
+            return Arrays.stream(values());
+        }
+    }
+
+    public enum COMMENT {
+        MARKER_ID,
+        TEXT,
+        POSTING_DATE;
+
+        public String signature() {
+            return this.name().toLowerCase();
+        }
+
+        public static Stream<COMMENT> fields() {
+            return Arrays.stream(values());
         }
     }
 
@@ -58,108 +78,119 @@ public class SQL {
 
     private static String selectFormat = "SELECT %s FROM %s;";
 
-    private static String insertFormat = "INSERT (%s) INTO %s VALUES(%s);";
+    private static String insertFormat = "INSERT INTO %s(%s) VALUES(%s);";
 
     private static String function1PFormat = "%s(%s)";
     private static String function2PFormat = "%s(%s, %s)";
     private static String function3PFormat = "%s(%s, %s, %s)";
-
-    private static String ID = "id";
+    private static String entryFormat = "'%s',%s";
+    private static String aliasFormat = "%s AS %s";
+    private static String postgresJSONFunctionFormat = "%s(%s)::json->'%s'";
 
     private static String AddressNodeJsonObj =
-            "json_build_object(" +
-                "'country',country," +
-                "'region',region," +
-                "'county',county," +
-                "'city',city," +
-                "'district',district," +
-                "'suburb',suburb," +
-                "'town',town," +
-                "'village',village," +
-                "'place',place," +
-                "'neighbourhood',neighbourhood," +
-                "'road',road"+
-            ") AS addressNode";
+            String.format(aliasFormat,
+                    json_BuildObject(MARKER.fields().filter(s ->
+                        !s.equals(ID) && !s.equals(N_DETECTIONS) &&
+                        !s.equals(POSTCODE) && !s.equals(COUNTRY_CODE) &&
+                        !s.equals(COORDINATES) && !s.equals(HOUSE_NUMBER)
+                    ).map(MARKER::signature)), "addressNode"
+            );
 
-    private static String CoordinatesJsonArray = "ST_AsGeoJSON(coordinates)::json->'coordinates' AS coordinates";
+    private static String CoordinatesJsonArray = String.format(aliasFormat,
+            ST_AsGeoJSON(MARKER.COORDINATES.signature(), MARKER.COORDINATES.signature()), "coordinates"
+    );
 
-    private static String selectBody = String.join(",", ID, AddressNodeJsonObj, CoordinatesJsonArray);
+    private static String selectBody =
+            String.join(",", ID.toString(), AddressNodeJsonObj, CoordinatesJsonArray);
 
-    private static BiFunction<String, String, String> ST_DistanceSphere =
-            (geom1, geom2) -> String.format(function2PFormat, "ST_DistanceSphere", geom1, geom2);
+    private static String json_BuildObject(Stream<String> columns) {
+        return String.format(function1PFormat,
+                "json_build_object", columns.map(c -> String.format(entryFormat, c, c)).collect(Collectors.joining(", "))
+        );
+    }
 
-    private static BiFunction<String, Integer, String> ST_SetSRID =
-            (geom, SRID) -> String.format(function2PFormat, "ST_SetSRID", geom, SRID.toString());
+    private static String ST_AsGeoJSON(String geom, String key) {
+        return String.format(postgresJSONFunctionFormat, "ST_AsGeoJson", geom, key);
+    }
 
-    private static BiFunction<String, String, String> ST_MakeLine =
-            (geom1, geom2) -> String.format(function2PFormat, "ST_MakeLine", geom1, geom2);
+    private static String ST_DistanceSphere(String geom1, String geom2){
+        return String.format(function2PFormat, "ST_DistanceSphere", geom1, geom2);
+    }
 
-    private static BiFunction<String, String, String> ST_MakePoint =
-            (x, y) -> String.format(function2PFormat, "ST_MakePoint", x, y);
+    private static String ST_SetSRID(String geom, Integer SRID){
+        return String.format(function2PFormat, "ST_SetSRID", geom, SRID.toString());
+    }
+
+    private static String ST_MakeLine(String geom1, String geom2) {
+      return String.format(function2PFormat, "ST_MakeLine", geom1, geom2);
+    }
+
+    private static String ST_MakePoint(String x, String y){
+      return String.format(function2PFormat, "ST_MakePoint", x, y);
+    }
 
     public static Function<String, String> selectMarkersQuery =
-            (filters) -> String.join(" ", "SELECT", selectBody, "FROM", TABLE.MARKERS.table_name, filters) + ";";
+            (filters) -> String.format(selectWhereFormat, selectBody, TABLE.MARKERS.signature(), filters);
 
     public static String selectOnRouteQuery =
-            String.format(selectWhereLessFormat, selectBody, TABLE.MARKERS.table_name,
-                    ST_DistanceSphere.apply(
-                        ST_SetSRID.apply(
-                            ST_MakeLine.apply(
-                                ST_MakePoint.apply(":x_A", ":y_A"),
-                                ST_MakePoint.apply(":x_B", ":y_B")
-                            ),
-                            4326
-                        ),
-                        String.join(".", TABLE.MARKERS.table_name, "coordinates")
-                    ), ":dist");
-
-//            String.join(" ",
-//                    "SELECT", selectBody, "FROM", TABLE.MARKERS.table_name, "WHERE",
-//                        , "< ;");
+            String.format(
+                selectWhereLessFormat, selectBody, TABLE.MARKERS.signature(),
+                ST_DistanceSphere(
+                    ST_SetSRID(
+                        ST_MakeLine(ST_MakePoint(":x_A", ":y_A"), ST_MakePoint(":x_B", ":y_B")),
+                        4326
+                    ),
+                    String.join(".", TABLE.MARKERS.signature(), MARKER.COORDINATES.signature())
+                ), ":dist");
 
     public static String selectInAreaQuery =
-            String.join(" ",
-                    "SELECT", selectBody, "FROM", TABLE.MARKERS.table_name, "WHERE",
-                        ST_DistanceSphere.apply(
-                                ST_SetSRID.apply(ST_MakePoint.apply(":x", ":y"), 4326),
-                                String.join(".", TABLE.MARKERS.table_name, "coordinates")
-                        ),"< :radius;"
+            String.format(
+                selectWhereLessFormat, selectBody, TABLE.MARKERS.signature(),
+                ST_DistanceSphere(
+                    ST_SetSRID(ST_MakePoint(":x", ":y"), 4326),
+                        String.join(".", TABLE.MARKERS.signature(), MARKER.COORDINATES.signature())
+                ),":radius"
             );
 
 
     public static String insertMarkerQuery =
-            String.join(" ",
-                    "INSERT", "INTO", TABLE.MARKERS.table_name , "(",
-                        TABLE.MARKERS.columns.stream()
-                            .filter(s -> !s.equals("id") && !s.equals("n_detections"))
-                            .collect(Collectors.joining(",")),
-                    ")",
-                    "VALUES", "(",
-                        TABLE.MARKERS.columns.stream()
-                            .filter(s -> !s.equals("id") && !s.equals("n_detections"))
-                            .map(s -> s.equals("coordinates") ? ST_SetSRID.apply(ST_MakePoint.apply(":x", ":y"), 4326) : ":"+s)
-                            .collect(Collectors.joining(",")),
-                    ");"
+            String.format(
+                insertFormat, TABLE.MARKERS.signature() ,
+                    MARKER.fields()
+                        .filter(s -> !s.equals(ID) && !s.equals(N_DETECTIONS))
+                        .map(MARKER::signature)
+                        .collect(Collectors.joining(",")),
+                    MARKER.fields()
+                        .filter(s -> !s.equals(ID) && !s.equals(N_DETECTIONS))
+                        .map(s -> s.equals(COORDINATES) ? ST_SetSRID(ST_MakePoint(":x", ":y"), 4326) : ":"+s.signature())
+                        .collect(Collectors.joining(","))
             );
 
     public static String insertCommentToMarkerQuery =
-            String.join(" ", "INSERT", "INTO", TABLE.COMMENTS.table_name ,"(",
-                    TABLE.COMMENTS.columns.stream()
-                            .filter(s -> !s.equals("marker_id") && !s.equals("posting_date"))
-                            .collect(Collectors.joining(","))
-                    ,")", "VALUES", "(",
-                    TABLE.COMMENTS.columns.stream()
-                            .filter(s -> !s.equals("marker_id") && !s.equals("posting_date"))
-                            .map(s -> ":"+s)
-                            .collect(Collectors.joining(","))
-                    ,");");
+            String.format(
+                insertFormat, TABLE.COMMENTS.signature() ,
+                    COMMENT.fields()
+                        .filter(s -> !s.equals(MARKER_ID) && !s.equals(POSTING_DATE))
+                        .map(COMMENT::signature)
+                        .collect(Collectors.joining(",")),
+                    COMMENT.fields()
+                            .filter(s -> !s.equals(MARKER_ID) && !s.equals(POSTING_DATE))
+                        .map(s -> ":"+s.signature())
+                        .collect(Collectors.joining(","))
+            );
 
     public static void main(String[] args) {
-        Utils.println("GET RES: " + selectMarkersQuery.apply(""));
-        Utils.println("GET ROUTE: " + selectOnRouteQuery);
-        Utils.println("GET AREA: " + selectInAreaQuery);
-        Utils.println("POST RES: " + insertMarkerQuery);
-        Utils.println("PUT RES: " + insertCommentToMarkerQuery);
+        println("GET RES: " + selectMarkersQuery.apply(Boolean.toString(true)));
+        println("GET ROUTE: " + selectOnRouteQuery);
+        println("GET AREA: " + selectInAreaQuery);
+        println("POST RES: " + insertMarkerQuery);
+        println("PUT RES: " + insertCommentToMarkerQuery);
+
+        println(MARKER.fields().collect(Collectors.toList()));
+        println(COMMENT.fields().collect(Collectors.toList()));
+
+        println(SQL.AddressNodeJsonObj);
+        println(SQL.CoordinatesJsonArray);
     }
 
 }
