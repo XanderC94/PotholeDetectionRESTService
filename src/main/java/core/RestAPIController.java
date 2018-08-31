@@ -15,6 +15,7 @@ import rest.RESTResource;
 import utils.*;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
@@ -32,7 +33,18 @@ import static utils.Utils.*;
 @RequestMapping("/api/pothole/")
 public class RestAPIController {
 
+    private static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.name();
+
     private static final String ORS_API_KEY = "5b3ce3597851110001cf6248c396a2051da84b2ea36fa8e7f8f99d89";
+
+    private final String geoCodingURLFormat =
+            "https://nominatim.openstreetmap.org/search?q=%s&format=%s&polygon_geojson=1&limit=%d";
+    private final String reverseGeoCodingURLFormat =
+            "https://nominatim.openstreetmap.org/reverse?lon=%f&lat=%f&format=%s";
+
+    private final String openRoutingServiceURLFormat =
+            "https://api.openrouteservice.org/directions?" +
+                "api_key=%s&coordinates=%f,%f|%f.9,%f.9&profile=%s&preference=%s&geometry_format=%s";
 
     private static final Gson gson = new GsonBuilder().create();
 
@@ -43,8 +55,8 @@ public class RestAPIController {
     private final String defaultRoad = "none";
 
     // a variation of 0.0000089 degrees corresponds approximately to 1m variation
-    private final Double minumDegreesVariation = 0.0000089;
-    private final Double minumMetersVariation = 1.0;
+    private final Double minimumDegreesVariation = 0.0000089;
+    private final Double minimumMetersVariation = 1.0;
 
     private final AtomicLong counter = new AtomicLong();
 
@@ -174,6 +186,11 @@ public class RestAPIController {
                 testFrom = Utils.checkCoordinatesFormat(from),
                 testTo = Utils.checkCoordinatesFormat(to);
 
+        log((testFrom.getX().isPresent() || testTo.getX().isPresent() ?
+                "Routing by Coordinates..." : "Routing by place...")
+                + "from " + from + " to " + to
+        );
+
         Optional<GeoCoordinates>
             optFrom = Optional.ofNullable(testTo.getX().orElse(this.geoCoding(from).orElse(null))),
             optTo = Optional.ofNullable(testTo.getX().orElse(this.geoCoding(to).orElse(null)));
@@ -182,13 +199,15 @@ public class RestAPIController {
                 orig = optFrom.orElseThrow(() -> new FormatException(testFrom.getY() + " or Invalid Location")),
                 dest = optTo.orElseThrow(() -> new FormatException(testTo.getY() + " or Invalid Location"));
 
-        final String bodyCache = HTTP.get(
-                "https://api.openrouteservice.org/directions?" +
-                        "api_key=" + ORS_API_KEY +
-                        "&coordinates=" + orig.getLng() +"," + orig.getLat() +"|" + dest.getLng() +"," + dest.getLat() +
-                        "&profile=" + mode +
-                        "&preference=" + route +
-                        "&geometry_format=geojson");
+        final String url = String.format(openRoutingServiceURLFormat, ORS_API_KEY,
+                orig.getLng(), orig.getLat(),
+                dest.getLng(), dest.getLat(),
+                mode, route, "geojson"
+                );
+
+        log(url);
+
+        final String bodyCache = HTTP.get(url);
 
         final Matcher matcher1 = routingRegex.matcher(bodyCache);
 
@@ -249,7 +268,7 @@ public class RestAPIController {
 
         GeoCoordinates coordinates = GeoCoordinates.fromString(point);
 
-        List<Marker> res = this.getElementsInArea(coordinates, this.minumMetersVariation);
+        List<Marker> res = this.getElementsInArea(coordinates, this.minimumMetersVariation);
 
         println(res);
 
@@ -394,14 +413,16 @@ public class RestAPIController {
     private Optional<GeoCoordinates> geoCoding(final String place) {
 
         final String bodyCache;
-        try {
-            bodyCache = HTTP.get(
-                    "https://nominatim.openstreetmap.org/search/"+
-                            place + "?" +
-                            "format=jsonv2" +
-                            "&limit=1");
 
-        } catch (IOException e) {
+        try {
+
+            final String url = String.format(geoCodingURLFormat, URLEncoder.encode(place, UTF_8), "jsonv2", 1);
+
+            log(url);
+
+            bodyCache = HTTP.get(url);
+
+        } catch (Exception e) {
             e.printStackTrace();
             return Optional.empty();
         }
@@ -421,11 +442,17 @@ public class RestAPIController {
 
         final String bodyCache;
         try {
-            bodyCache = HTTP.get(
-                    "https://nominatim.openstreetmap.org/reverse?" +
-                            "format=jsonv2" +
-                            "&lat=" + coordinates.getLat() +
-                            "&lon=" + coordinates.getLng());
+
+            final String url = String.format(
+                    reverseGeoCodingURLFormat,
+                    coordinates.getLng(), coordinates.getLat(),
+                    "jsonv2"
+            );
+
+            log(url);
+
+            bodyCache = HTTP.get(url);
+
         } catch (IOException e) {
             e.printStackTrace();
             return Optional.empty();

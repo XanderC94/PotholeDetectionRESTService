@@ -1,8 +1,12 @@
 package utils;
 
 import json.GeoCoordinates;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -11,6 +15,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Utils {
+
+    final static Logger logger = LoggerFactory.getLogger("REST-Logger");
 
     public static final Pattern addressRegex = Pattern.compile("(?:\"address\":)\\{(.*?)\\}");
     public static final Pattern coordinatesRegex = Pattern.compile("\"lat\":\"[+-]?\\d*\\.\\d*\",\"lon\":\"[+-]?\\d*\\.\\d*\"");
@@ -29,6 +35,18 @@ public class Utils {
                         x.stream().map(Object::toString).collect(Collectors.toList())
                 )
         );
+    }
+
+    public static void log(String s) {
+        logger.info(s);
+    }
+
+    public static <T extends Object> void log(Collection<T> x) {
+        final String str = String.join(",",
+                x.stream().map(Object::toString).collect(Collectors.toList())
+        );
+
+        logger.info(str);
     }
 
     public static <T extends Object> String collectionToString(Collection<T> x) {
@@ -68,10 +86,9 @@ public class Utils {
 
     public enum CHECK_CODE implements Function<String, String> {
 
-        OK("Format is Correct"),
-        DUPLICATED("Duplicated"),
-        BAD_FORMAT("Coordinates must be like [x.y {N|E|}, w.z {E|N|}], instead got"),
-        FORMATS_MISMATCH("Format mismatch");
+        OK("Format %s is Correct"),
+        DUPLICATED("Duplicated %s"),
+        BAD_FORMAT("Coordinates must be like [x.y {N|E|}, w.z {E|N|}], instead got %s");
 
         private String value;
 
@@ -81,7 +98,7 @@ public class Utils {
 
         @Override
         public String apply(String s) {
-            return String.join(" ", this.value, s);
+            return String.format(this.value, s);
         }
     }
 
