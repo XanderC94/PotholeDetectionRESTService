@@ -40,11 +40,11 @@ public class RestAPIController {
     private final String geoCodingURLFormat =
             "https://nominatim.openstreetmap.org/search?q=%s&format=%s&polygon_geojson=1&limit=%d";
     private final String reverseGeoCodingURLFormat =
-            "https://nominatim.openstreetmap.org/reverse?lon=%f&lat=%f&format=%s";
+            "https://nominatim.openstreetmap.org/reverse?lon=%.9f&lat=%.9f&format=%s";
 
     private final String openRoutingServiceURLFormat =
             "https://api.openrouteservice.org/directions?" +
-                "api_key=%s&coordinates=%f,%f|%f.9,%f.9&profile=%s&preference=%s&geometry_format=%s";
+                "api_key=%s&coordinates=%.9f,%.9f|%.9f,%.9f&profile=%s&preference=%s&geometry_format=%s";
 
     private static final Gson gson = new GsonBuilder().create();
 
@@ -140,7 +140,7 @@ public class RestAPIController {
 
         Handle handler = JdbiSingleton.getInstance().open();
 
-        Query q = handler.select(SQL.getResourceQuery
+        Query q = handler.select(SQL.selectMarkersQuery
                 .apply(filters(country, region, county, town, road)));
 
         if (!country.toLowerCase().equals(defaultCountry)) {
@@ -199,6 +199,8 @@ public class RestAPIController {
                 orig = optFrom.orElseThrow(() -> new FormatException(testFrom.getY() + " or Invalid Location")),
                 dest = optTo.orElseThrow(() -> new FormatException(testTo.getY() + " or Invalid Location"));
 
+        log(Arrays.asList(orig, dest));
+
         final String url = String.format(openRoutingServiceURLFormat, ORS_API_KEY,
                 orig.getLng(), orig.getLat(),
                 dest.getLng(), dest.getLat(),
@@ -225,7 +227,7 @@ public class RestAPIController {
 
             final Handle handler = JdbiSingleton.getInstance().open();
 
-            final Query q = handler.select(SQL.getRouteQuery);
+            final Query q = handler.select(SQL.selectOnRouteQuery);
 
             final Set<Marker> results = new HashSet<>();
 
@@ -328,7 +330,7 @@ public class RestAPIController {
 
         final Integer responseValue = reversedCoordinates
                 .map(node -> handler
-                        .createUpdate(SQL.addMarkerQuery)
+                        .createUpdate(SQL.insertMarkerQuery)
                         .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
                         .bind("country", Utils.stringify(node.getCountry()))
                         .bind("country_code", Utils.stringify(node.getCountryCode()))
@@ -374,7 +376,7 @@ public class RestAPIController {
         Integer res;
         try {
             res = handler
-                    .createUpdate(SQL.addCommentQuery)
+                    .createUpdate(SQL.insertCommentToMarkerQuery)
                     .bind("marker_id", comment.getMarkerID())
                     .bind("text", stringify(comment.getText()))
                     .execute();
@@ -479,7 +481,7 @@ public class RestAPIController {
 
         Handle handler = JdbiSingleton.getInstance().open();
 
-        Query q = handler.select(SQL.getAreaQuery);
+        Query q = handler.select(SQL.selectInAreaQuery);
 
         // Need to bind
         q.bind("y", origin.getLat())
