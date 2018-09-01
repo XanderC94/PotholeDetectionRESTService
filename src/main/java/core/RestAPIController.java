@@ -9,6 +9,7 @@ import core.exceptions.WrongBodyDataException;
 import json.*;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
+import org.joda.time.DateTime;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import rest.RESTResource;
@@ -140,8 +141,9 @@ public class RestAPIController {
 
         Handle handler = JdbiSingleton.getInstance().open();
 
-        Query q = handler.select(SQL.selectMarkersQuery
-                .apply(filters(country, region, county, town, road)));
+        String filters = filters(country, region, county, town, road);
+        println(filters);
+        Query q = handler.select(SQL.selectMarkersQuery.apply(filters));
 
         if (!country.toLowerCase().equals(defaultCountry)) {
             q = q.bind("country", Utils.stringify(country));
@@ -376,7 +378,7 @@ public class RestAPIController {
 
         final Comment comment = gson.fromJson(body, Comment.class);
 
-        if (comment.getMarkerID() != id) {
+        if (id.equals(comment.getMarkerID())) {
             throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + comment.getMarkerID() + ")");
         }
 
@@ -396,7 +398,10 @@ public class RestAPIController {
 
         handler.close();
 
-        return new RESTResource<>(counter.incrementAndGet(), res);
+        return new RESTResource<>(counter.incrementAndGet(), res)
+                .withInfo(String.format("Added Comment %s to %d on date %s",
+                        comment.getText(), id, DateTime.now().toLocalDateTime())
+                );
     }
 
     private List<Marker> resolveQuery(final Query q) throws Exception{
@@ -528,14 +533,14 @@ public class RestAPIController {
                 .map(e-> e.getKey() + " ILIKE :" + e.getKey().toLowerCase()+"")
                 .collect(Collectors.toList());
 
-        final String eFilter = " WHERE " + String.join(" AND ", eFilters);
+        final String eFilter = String.join(" AND ", eFilters);
         final String sFilter = String.join(" OR ", sFilters) ;
 
         final String filter = String.join(" AND ", eFilter, "(" + sFilter + ")");
 
         println(filter);
 
-        return eFilters.isEmpty() && sFilters.isEmpty() ? "" :
+        return eFilters.isEmpty() && sFilters.isEmpty() ? Boolean.toString(true) :
                 eFilters.isEmpty() ? sFilter :
                 sFilter.isEmpty() ? eFilter :
                 filter;
