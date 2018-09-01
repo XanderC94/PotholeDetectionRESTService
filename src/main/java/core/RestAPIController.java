@@ -175,7 +175,7 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/route")
-    public @ResponseBody RESTResource<List<Marker>> route(@RequestParam("from") String from,
+    public @ResponseBody RESTResource<RoutesResponse> route(@RequestParam("from") String from,
                                                           @RequestParam("to") String to,
                                                           @RequestParam(value = "dist", required = false, defaultValue = "100") Integer dist,
                                                           @RequestParam(value = "mode", required = false, defaultValue = "driving-car") String mode,
@@ -250,12 +250,22 @@ public class RestAPIController {
 
             handler.close();
 
-            return new RESTResource<List<Marker>>(counter.incrementAndGet(), new ArrayList<>(results))
-                    .withInfo(bodyCache);
+//            return new RESTResource<List<Marker>>(counter.incrementAndGet(), new ArrayList<>(results))
+//                    .withInfo(bodyCache);
+
+            RoutesResponse response = new RoutesResponse(new ArrayList<>(results), bodyCache);
+
+            RESTResource<RoutesResponse> result = new RESTResource<RoutesResponse>(counter.incrementAndGet(), response)
+                    .withInfo("Routes founded");
+
+
+            println(result.getContent().getRouteServiceResponse().toString());
+            return result;
 
         } else {
 
-            return new RESTResource<List<Marker>>(counter.incrementAndGet(), new ArrayList<>())
+            RoutesResponse response = new RoutesResponse(new ArrayList<>(), "");
+            return new RESTResource<RoutesResponse>(counter.incrementAndGet(), response)
                     .withInfo("{" +
                             "\"info\":\"There is no viable route from "+ from + " to " + to + "\", " +
                             "\"queryOutput\":" + bodyCache +
