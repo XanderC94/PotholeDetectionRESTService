@@ -260,8 +260,6 @@ public class RestAPIController {
             RESTResource<RoutesResponse> result = new RESTResource<RoutesResponse>(counter.incrementAndGet(), response)
                     .withInfo("Routes founded");
 
-
-            println(result.getContent().getRouteServiceResponse().toString());
             return result;
 
         } else {
