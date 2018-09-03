@@ -1,0 +1,31 @@
+spring:
+  profiles: dev
+server:
+  port: 8081
+  address: "192.168.1.11"
+---
+
+spring:
+  profiles: dist
+server:
+  port: 8443
+  ssl:
+    key-store: classpath:ssl/keystore.p12
+    key-store-password: pumpkins
+    keyStoreType: PKCS12
+    keyAlias: https-rest-service-key
+  address: "192.168.1.11"
+---
+
+spring:
+  profiles:
+    active: dist
+
+database:
+  driver: "jdbc"
+  type: "postgresql"
+  hostname: "localhost"
+  port: 6666
+  name: "PotholeDetectionSystemDB"
+  user: "pothole_system_web_service"
+  password: "pumpkins"
