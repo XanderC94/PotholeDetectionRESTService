@@ -23,6 +23,8 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static utils.Factory.nuple;
+import static utils.Regex.*;
 import static utils.Utils.*;
 
 /**
@@ -185,8 +187,8 @@ public class RestAPIController {
                                                           Model model) throws Exception {
 
         Tuple<Optional<GeoCoordinates>, String>
-                testFrom = Utils.checkCoordinatesFormat(from),
-                testTo = Utils.checkCoordinatesFormat(to);
+                testFrom = Formatting.checkCoordinatesFormat(from),
+                testTo = Formatting.checkCoordinatesFormat(to);
 
         log((testFrom.getX().isPresent() || testTo.getX().isPresent() ?
                 "Routing by Coordinates..." : "Routing by place...")
@@ -213,13 +215,13 @@ public class RestAPIController {
 
         final String bodyCache = HTTP.get(url);
 
-        final Matcher matcher1 = routingRegex.matcher(bodyCache);
+        final Matcher matcher1 = routeGeometry.matcher(bodyCache);
 
         if (matcher1.find()) {
 
             println(matcher1.group(1).trim());
 
-            final Matcher matcher2 = matrixRegex.matcher(matcher1.group(1).trim());
+            final Matcher matcher2 = coordinatesTuple.matcher(matcher1.group(1).trim());
 
             final List<GeoCoordinates> vertices = new ArrayList<>();
 
@@ -404,7 +406,7 @@ public class RestAPIController {
 
     private List<Marker> resolveQuery(final Query q) throws Exception{
         List<Nuple<Integer, String, String>> resultSets =
-                q.map((rs, ctx) -> Utils.nuple(
+                q.map((rs, ctx) -> nuple(
                         rs.getInt("ID"),
                         rs.getString("coordinates"),
                         rs.getString("addressNode")
@@ -442,7 +444,7 @@ public class RestAPIController {
             return Optional.empty();
         }
 
-        Matcher matcher = coordinatesRegex.matcher(bodyCache);
+        Matcher matcher = geocodingCoordinates.matcher(bodyCache);
 
         if (matcher.find()) {
             String coordinates = matcher.group(0).replaceFirst("lon", "lng");
@@ -473,7 +475,7 @@ public class RestAPIController {
             return Optional.empty();
         }
 
-        Matcher matcher = addressRegex.matcher(bodyCache);
+        Matcher matcher = reverseGeocodingAddress.matcher(bodyCache);
 
         if (matcher.find()) {
             String address = matcher.group(1);

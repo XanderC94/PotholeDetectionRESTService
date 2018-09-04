@@ -1,7 +1,7 @@
 package json;
 
 import core.exceptions.FormatException;
-import utils.Tuple;
+import utils.Formatting;
 import utils.Utils;
 
 import java.util.Objects;
@@ -64,12 +64,12 @@ public class GeoCoordinates {
 
 
     public static GeoCoordinates fromString(final String gc) throws Exception {
-        return GeoCoordinates.fromString(gc, Utils.FORMAT.LNG_LAT);
+        return GeoCoordinates.fromString(gc, Formatting.FORMAT.LNG_LAT);
     }
 
-    public static GeoCoordinates fromString(final String gc, final Utils.FORMAT format) throws Exception {
+    public static GeoCoordinates fromString(final String gc, final Formatting.FORMAT format) throws Exception {
 
-        final Tuple<Optional<GeoCoordinates>, String> p = Utils.checkCoordinatesFormat(gc);
+        final Tuple<Optional<GeoCoordinates>, String> p = Formatting.checkCoordinatesFormat(gc);
 
         return format.apply(p.getX().orElseThrow(() -> new FormatException(p.getY())).toArray());
     }

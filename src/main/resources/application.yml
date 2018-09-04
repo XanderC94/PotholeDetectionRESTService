@@ -19,7 +19,7 @@ server:
 
 spring:
   profiles:
-    active: dist
+    active: dev
 
 database:
   driver: "jdbc"
