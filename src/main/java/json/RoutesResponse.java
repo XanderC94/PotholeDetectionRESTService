@@ -13,23 +13,23 @@ import java.util.List;
  */
 public class RoutesResponse {
     private List<Marker> markers;
-    private JsonNode routeServiceResponse;
+    private JsonNode routingServiceResponse;
 
 
 
-    public RoutesResponse(List<Marker> markers, JsonNode routeServiceResponse){
+    public RoutesResponse(List<Marker> markers, JsonNode routingServiceResponse){
         this.markers = markers;
-        this.routeServiceResponse = routeServiceResponse;
+        this.routingServiceResponse = routingServiceResponse;
     }
 
-    public RoutesResponse(List<Marker> markers, String routeServiceResponse) throws IOException{
+    public RoutesResponse(List<Marker> markers, String routingServiceResponse) throws IOException{
         this.markers = markers;
         JsonParser parser = new JsonParser();
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
-        JsonNode jsonResponse = mapper.readTree(routeServiceResponse);//parser.parse(routeServiceResponse);
-        this.routeServiceResponse = jsonResponse;
+        JsonNode jsonResponse = mapper.readTree(routingServiceResponse);//parser.parse(routingServiceResponse);
+        this.routingServiceResponse = jsonResponse;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class RoutesResponse {
     public String toString() {
         return "{" +
                 "markers: " + markers.toString() + "," +
-                "routeServiceResponse" + routeServiceResponse.toString() +
+                "routingServiceResponse" + routingServiceResponse.toString() +
                 " }";
     }
 
@@ -58,21 +58,21 @@ public class RoutesResponse {
         this.markers = markers;
     }
 
-    public JsonNode getRouteServiceResponse() {
-        return routeServiceResponse;
+    public JsonNode getRoutingServiceResponse() {
+        return routingServiceResponse;
     }
 
-    public void setRouteServiceResponse(JsonNode routeServiceResponse) {
-        this.routeServiceResponse = routeServiceResponse;
+    public void setRoutingServiceResponse(JsonNode routingServiceResponse) {
+        this.routingServiceResponse = routingServiceResponse;
     }
 
-    public void setRouteServiceResponse(String routeServiceResponse) throws IOException{
+    public void setRouteServiceResponse(String routingServiceResponse) throws IOException{
         JsonParser parser = new JsonParser();
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         JsonNode jsonResponse = null;//pars
-        jsonResponse = mapper.readTree(routeServiceResponse);
-        this.routeServiceResponse = jsonResponse;
+        jsonResponse = mapper.readTree(routingServiceResponse);
+        this.routingServiceResponse = jsonResponse;
     }
 }
