@@ -26,7 +26,7 @@ public class RoutesResponse {
         this.markers = markers;
         JsonParser parser = new JsonParser();
         ObjectMapper mapper = new ObjectMapper();
-        mapper.configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         JsonNode jsonResponse = mapper.readTree(routeServiceResponse);//parser.parse(routeServiceResponse);
         this.routeServiceResponse = jsonResponse;

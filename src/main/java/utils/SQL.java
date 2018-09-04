@@ -97,7 +97,7 @@ public class SQL {
             );
 
     private static String CoordinatesJsonArray = String.format(aliasFormat,
-            ST_AsGeoJSON(MARKER.COORDINATES.signature(), MARKER.COORDINATES.signature()), "coordinates"
+            ST_AsGeoJSON(MARKER.COORDINATES.signature(), MARKER.COORDINATES.signature()), MARKER.COORDINATES.signature()
     );
 
     private static String selectBody =

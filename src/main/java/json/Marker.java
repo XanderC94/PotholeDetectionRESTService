@@ -69,7 +69,7 @@ public class Marker {
         return "Marker{" +
                 "ID=" + ID +
                 ", nDetections=" + nDetections +
-                ", coordinates=" + coordinates +
+                ", coordinatesTuple=" + coordinates +
                 ", addressNode=" + addressNode.toString() +
                 '}';
     }
