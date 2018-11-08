@@ -47,6 +47,21 @@ public class Utils {
         );
     }
 
+    public static NameFilter provincesFilter = new ProvinceFilter("src/main/resources/iso/provinces.csv");
+
+    public static NameFilter regionFilter = new RegionFilter("src/main/resources/iso/states.csv");
+
+    public static String clean(String str) {
+        return str
+                .replace("`","")
+                .replace("´", "")
+                .replace("\'", "")
+                .replace("-","_")
+                .replace(" ", "_")
+                .toUpperCase();
+
+    }
+
     // number of km per degree = ~111km (111.32 in google maps, but range varies
     // between 110.567km at the equator and 111.699km at the poles)
     // 1km in degree = 1 / 111.32km = 0.0089

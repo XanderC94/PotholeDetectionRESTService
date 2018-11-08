@@ -25,7 +25,6 @@ import java.util.stream.IntStream;
 
 import static utils.Factory.nuple;
 import static utils.Regex.*;
-import static utils.Utils.*;
 
 /**
  *
@@ -33,7 +32,7 @@ import static utils.Utils.*;
  */
 @SuppressWarnings("unused")
 @RestController
-@RequestMapping("/api/pothole/")
+@RequestMapping("/api/pothole")
 public class RestAPIController {
 
     private static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.name();
@@ -141,10 +140,13 @@ public class RestAPIController {
             String country, String region, String county, String town, String road, Model model
     ) throws Exception {
 
+        county = Utils.provincesFilter.filter(county);
+        region = Utils.regionFilter.filter(region);
+
         Handle handler = JdbiSingleton.getInstance().open();
 
         String filters = filters(country, region, county, town, road);
-        println(filters);
+        Utils.println(filters);
         Query q = handler.select(SQL.selectMarkersQuery.apply(filters));
 
         if (!country.toLowerCase().equals(defaultCountry)) {
@@ -172,7 +174,7 @@ public class RestAPIController {
 
         handler.close();
 
-        println(res.stream().map(r -> r.getCoordinates().toString()).collect(Collectors.toList()));
+        Utils.println(res.stream().map(r -> r.getCoordinates().toString()).collect(Collectors.toList()));
 
         return new RESTResource<>(counter.incrementAndGet(), res);
     }
@@ -190,7 +192,7 @@ public class RestAPIController {
                 testFrom = Formatting.checkCoordinatesFormat(from),
                 testTo = Formatting.checkCoordinatesFormat(to);
 
-        log((testFrom.getX().isPresent() || testTo.getX().isPresent() ?
+        Utils.log((testFrom.getX().isPresent() || testTo.getX().isPresent() ?
                 "Routing by Coordinates..." : "Routing by place...")
                 + "from " + from + " to " + to
         );
@@ -203,7 +205,7 @@ public class RestAPIController {
                 orig = optFrom.orElseThrow(() -> new FormatException(testFrom.getY() + " or Invalid Location")),
                 dest = optTo.orElseThrow(() -> new FormatException(testTo.getY() + " or Invalid Location"));
 
-        log(Arrays.asList(orig, dest));
+        Utils.log(Arrays.asList(orig, dest));
 
         final String url = String.format(openRoutingServiceURLFormat, ORS_API_KEY,
                 orig.getLng(), orig.getLat(),
@@ -211,7 +213,7 @@ public class RestAPIController {
                 mode, route, "geojson"
                 );
 
-        log(url);
+        Utils.log(url);
 
         final String bodyCache = HTTP.get(url);
 
@@ -219,7 +221,7 @@ public class RestAPIController {
 
         if (matcher1.find()) {
 
-            println(matcher1.group(1).trim());
+//            println(matcher1.group(1).trim());
 
             final Matcher matcher2 = coordinatesTuple.matcher(matcher1.group(1).trim());
 
@@ -284,7 +286,7 @@ public class RestAPIController {
 
         List<Marker> res = this.getElementsInArea(coordinates, this.minimumMetersVariation);
 
-        println(res);
+        Utils.println(res);
 
         if(res.isEmpty()){
             throw new MarkerNotFoundException("No marker found in a range of 1 meter from the specified coordinates: " +
@@ -324,7 +326,7 @@ public class RestAPIController {
         return new RESTResource<>(
                 counter.incrementAndGet(),
                 reverseGeoCoding(GeoCoordinates.fromString(coordinates))
-                        .orElse(OSMAddressNode.empty())
+                        .orElse(OSMAddressNode.empty()).unfiltered()
         );
     }
 
@@ -390,7 +392,7 @@ public class RestAPIController {
             res = handler
                     .createUpdate(SQL.insertCommentToMarkerQuery)
                     .bind("marker_id", comment.getMarkerID())
-                    .bind("text", stringify(comment.getText()))
+                    .bind("text", Utils.stringify(comment.getText()))
                     .execute();
         } catch (Exception e) {
             throw new DBQueryExecutionException("Unable to execute statement on the DB");
@@ -420,9 +422,11 @@ public class RestAPIController {
             res.add(new Marker(
                     Long.valueOf(n.getX()), 0,
                     GeoCoordinates.fromString(n.getY()),
-                    gson.fromJson(n.getZ(), OSMAddressNode.class)
+                    gson.fromJson(n.getZ(), OSMAddressNode.class).unfiltered()
             ));
         }
+
+        Utils.println(res);
 
         return res;
     }
@@ -435,7 +439,7 @@ public class RestAPIController {
 
             final String url = String.format(geoCodingURLFormat, URLEncoder.encode(place, UTF_8), "jsonv2", 1);
 
-            log(url);
+            Utils.log(url);
 
             bodyCache = HTTP.get(url);
 
@@ -466,7 +470,7 @@ public class RestAPIController {
                     "jsonv2"
             );
 
-            log(url);
+            Utils.log(url);
 
             bodyCache = HTTP.get(url);
 
@@ -538,7 +542,7 @@ public class RestAPIController {
 
         final String filter = String.join(" AND ", eFilter, "(" + sFilter + ")");
 
-        println(filter);
+//        println(filter);
 
         return eFilters.isEmpty() && sFilters.isEmpty() ? Boolean.toString(true) :
                 eFilters.isEmpty() ? sFilter :

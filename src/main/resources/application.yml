@@ -1,8 +1,8 @@
 spring:
   profiles: dev
 server:
-  port: 8080
-  address: "192.168.1.11"
+  port: 9080
+  address: "192.168.1.12"
 ---
 
 spring:
@@ -14,12 +14,13 @@ server:
     key-store-password: pumpkins
     keyStoreType: PKCS12
     keyAlias: https-rest-service-key
-  address: "192.168.1.11"
+  address: "192.168.1.12"
+
 ---
 
 spring:
   profiles:
-    active: dev
+    active: dist
 
 database:
   driver: "jdbc"

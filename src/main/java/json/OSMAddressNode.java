@@ -1,5 +1,7 @@
 package json;
 
+import utils.Utils;
+
 import java.util.Objects;
 
 /**
@@ -163,6 +165,29 @@ public class OSMAddressNode {
                 Objects.equals(getPostcode(), that.getPostcode()) &&
                 Objects.equals(getRoad(), that.getRoad()) &&
                 Objects.equals(getHouseNumber(), that.getHouseNumber());
+    }
+
+    public OSMAddressNode unfiltered() {
+
+        Utils.println(Utils.clean(this.county));
+        Utils.println(Utils.clean(this.region));
+
+        return new OSMAddressNode(
+            this.houseNumber,
+            this.road,
+            this.city,
+            this.neighbourhood,
+            this.town,
+            Utils.provincesFilter.unfilter(this.county),
+            Utils.regionFilter.unfilter(this.region),
+            this.postcode,
+            this.country,
+            this.countryCode,
+            this.district,
+            this.suburb,
+            this.village,
+            this.place
+        );
     }
 
     @Override

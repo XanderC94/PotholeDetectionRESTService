@@ -44,6 +44,8 @@ dependencies {
     compile "org.jdbi:jdbi3-core:3.0.0"
     compile "org.jdbi:jdbi3-postgres:3.0.0"
     compile "org.jdbi:jdbi3-spring4:3.0.0"
+    compile 'com.opencsv:opencsv:4.3.2'
+    
     testCompile "junit:junit"
     testCompile "org.springframework.boot:spring-boot-starter-test"
 //    testCompile "org.springframework.security:spring-security-test"
