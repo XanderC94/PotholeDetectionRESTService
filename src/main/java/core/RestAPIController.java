@@ -146,7 +146,7 @@ public class RestAPIController {
         Handle handler = JdbiSingleton.getInstance().open();
 
         String filters = filters(country, region, county, town, road);
-        Utils.println(filters);
+//        Utils.println(filters);
         Query q = handler.select(SQL.selectMarkersQuery.apply(filters));
 
         if (!country.toLowerCase().equals(defaultCountry)) {
@@ -174,7 +174,7 @@ public class RestAPIController {
 
         handler.close();
 
-        Utils.println(res.stream().map(r -> r.getCoordinates().toString()).collect(Collectors.toList()));
+//        Utils.println(res.stream().map(r -> r.getCoordinates().toString()).collect(Collectors.toList()));
 
         return new RESTResource<>(counter.incrementAndGet(), res);
     }
@@ -426,7 +426,7 @@ public class RestAPIController {
             ));
         }
 
-        Utils.println(res);
+//        Utils.println(res);
 
         return res;
     }

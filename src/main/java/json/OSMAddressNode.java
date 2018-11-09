@@ -169,8 +169,8 @@ public class OSMAddressNode {
 
     public OSMAddressNode unfiltered() {
 
-        Utils.println(Utils.clean(this.county));
-        Utils.println(Utils.clean(this.region));
+//        Utils.println(Utils.clean(this.county));
+//        Utils.println(Utils.clean(this.region));
 
         return new OSMAddressNode(
             this.houseNumber,
