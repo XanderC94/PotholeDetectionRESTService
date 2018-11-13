@@ -145,6 +145,10 @@ public class SQL {
     public static Function<String, String> selectMarkersQuery =
             (filters) -> String.format(selectWhereFormat, selectBody, TABLE.MARKERS.signature(), filters);
 
+    public static String selectMarkerByUId = selectMarkersQuery.apply(
+            String.format(identityFormat, MARKER.ID.toString(), ":marker_id")
+    );
+
     public static String selectOnRouteQuery =
             String.format(
                 selectWhereLessFormat, selectBody, TABLE.MARKERS.signature(),
@@ -204,6 +208,7 @@ public class SQL {
 
     public static void main(String[] args) {
         println("GET RES: " + selectMarkersQuery.apply(Boolean.toString(true)));
+        println("GET RES: " + selectMarkerByUId);
         println("GET ROUTE: " + selectOnRouteQuery);
         println("GET AREA: " + selectInAreaQuery);
         println("POST RES: " + insertMarkerQuery);
