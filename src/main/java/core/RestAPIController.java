@@ -373,42 +373,61 @@ public class RestAPIController {
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.PUT, value = "/{id}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.PUT, value = "/{id}/upvote", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody RESTResource<Integer> addUpvote(@PathVariable Integer id,
+                                                           @RequestBody String body,
+                                                           Model model) throws Exception {
+
+        final Upvote upvote = gson.fromJson(body, Upvote.class);
+
+        Utils.println(upvote.toString());
+
+        int res;
+        String info;
+        Handle handler = JdbiSingleton.getInstance().open();
+
+        if (id != upvote.getMarkerId()) {
+            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + upvote.getMarkerId() + ")");
+        }
+
+        res = handler.createUpdate(SQL.upvoteMarkerQuery)
+                .bind("marker_id", upvote.getMarkerId()).execute();
+
+        info = String.format("Added Upvote to %d on date %s;\n", id, DateTime.now().toLocalDateTime());
+
+        handler.close();
+
+        return new RESTResource<>(counter.incrementAndGet(), res).withInfo(info);
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.PUT, value = "/{id}/comment", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody RESTResource<Integer> addFeedback(@PathVariable Integer id,
                                                            @RequestBody String body,
                                                            Model model) throws Exception {
 
         final UserFeedback userFeedback = gson.fromJson(body, UserFeedback.class);
 
-        if (id != userFeedback.getMarkerID()) {
-            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + userFeedback.getMarkerID() + ")");
+        if (id != userFeedback.getMarkerId()) {
+            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + userFeedback.getMarkerId() + ")");
         }
 
         Handle handler = JdbiSingleton.getInstance().open();
         int res;
-        String info = "";
-
-        if (userFeedback.isUpvote()) { // Add Upvote
-
-            res = handler.createUpdate(SQL.upvoteMarkerQuery)
-                    .bind("marker_id", userFeedback.getMarkerID()).execute();
-
-            info = String.format("Added Upvote to %d on date %s;\n", id, DateTime.now().toLocalDateTime());
-        }
+        String info;
 
         if (!userFeedback.getText().isEmpty()) { // Add Comment
             try {
                 res = handler
                         .createUpdate(SQL.insertCommentToMarkerQuery)
-                        .bind("marker_id", userFeedback.getMarkerID())
+                        .bind("marker_id", userFeedback.getMarkerId())
                         .bind("text", Utils.stringify(userFeedback.getText()))
                         .execute();
 
-                info = String.join("",
-                        info,
-                        String.format("Added Comment %s to %d on date %s;\n",
-                        userFeedback.getText(), id, DateTime.now().toLocalDateTime()))
-                ;
+                info = String.format(
+                        "Added Comment %s to %d on date %s;\n",
+                        userFeedback.getText(), id, DateTime.now().toLocalDateTime()
+                );
 
             } catch (Exception e) {
                 throw new DBQueryExecutionException("Unable to execute statement on the DB");
