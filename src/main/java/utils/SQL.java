@@ -69,6 +69,7 @@ public class SQL {
         }
     }
 
+    private static String selectFormat = "SELECT %s FROM %s;";
     private static String selectWhereFormat = "SELECT %s FROM %s WHERE %s;";
     private static String selectWhereLessFormat = "SELECT %s FROM %s WHERE %s < %s;";
     private static String selectWhereMoreFormat = "SELECT %s FROM %s WHERE %s > %s;";
@@ -76,7 +77,9 @@ public class SQL {
     private static String selectWhereNotEqualFormat = "SELECT %s FROM %s WHERE %s <> %s;";
     private static String selectWhereBetweenFormat = "SELECT %s FROM %s WHERE %s BETWEEN &s AND %s;";
 
-    private static String selectFormat = "SELECT %s FROM %s;";
+    private static String updateFormat = "UPDATE %s SET %s;";
+    private static String updateFormatWhere = "UPDATE %s SET %s WHERE %s;";
+    private static String updateFormatWhereEqual = "UPDATE %s SET %s WHERE %s = %s;";
 
     private static String insertFormat = "INSERT INTO %s(%s) VALUES(%s);";
 
@@ -85,6 +88,8 @@ public class SQL {
     private static String function3PFormat = "%s(%s, %s, %s)";
     private static String entryFormat = "'%s',%s";
     private static String aliasFormat = "%s AS %s";
+    private static String identityFormat = "%s = %s";
+    private static String sumFormat = "%s + %s";
     private static String postgresJSONFunctionFormat = "%s(%s)::json->'%s'";
 
     private static String AddressNodeJsonObj =
@@ -101,7 +106,7 @@ public class SQL {
     );
 
     private static String selectBody =
-            String.join(",", ID.toString(), AddressNodeJsonObj, CoordinatesJsonArray);
+            String.join(",", ID.toString(), N_DETECTIONS.toString(), AddressNodeJsonObj, CoordinatesJsonArray);
 
     private static String json_BuildObject(Stream<String> columns) {
         return String.format(function1PFormat,
@@ -127,6 +132,14 @@ public class SQL {
 
     private static String ST_MakePoint(String x, String y){
       return String.format(function2PFormat, "ST_MakePoint", x, y);
+    }
+
+    private static String assign(String x, String y) {
+        return String.format(identityFormat, x, y);
+    }
+
+    private static String sum(String x, String y) {
+        return String.format(sumFormat, x, y);
     }
 
     public static Function<String, String> selectMarkersQuery =
@@ -168,7 +181,7 @@ public class SQL {
 
     public static String insertCommentToMarkerQuery =
             String.format(
-                insertFormat, TABLE.COMMENTS.signature() ,
+                insertFormat, TABLE.COMMENTS.signature(),
                     COMMENT.fields()
                         .filter(s -> !s.equals(MARKER_ID) && !s.equals(POSTING_DATE))
                         .map(COMMENT::signature)
@@ -179,12 +192,23 @@ public class SQL {
                         .collect(Collectors.joining(","))
             );
 
+    public static String upvoteMarkerQuery =
+            String.format(
+                updateFormatWhereEqual, TABLE.MARKERS.signature(),
+                    assign(
+                        MARKER.N_DETECTIONS.signature(),
+                        sum(MARKER.N_DETECTIONS.signature(), "1")
+                    ),
+                    MARKER.ID.signature(), ":marker_id"
+            );
+
     public static void main(String[] args) {
         println("GET RES: " + selectMarkersQuery.apply(Boolean.toString(true)));
         println("GET ROUTE: " + selectOnRouteQuery);
         println("GET AREA: " + selectInAreaQuery);
         println("POST RES: " + insertMarkerQuery);
         println("PUT RES: " + insertCommentToMarkerQuery);
+        println("PUT RES: " + upvoteMarkerQuery);
 
         println(MARKER.fields().collect(Collectors.toList()));
         println(COMMENT.fields().collect(Collectors.toList()));

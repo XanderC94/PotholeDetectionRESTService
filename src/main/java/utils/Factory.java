@@ -4,9 +4,14 @@ import json.*;
 
 public class Factory {
 
-    public static <X, Y, Z> Nuple<X, Y, Z> nuple(final X x, final Y y, final Z z) {
+    public static <X, Y, Z> Tuple3<X, Y, Z> nuple(final X x, final Y y, final Z z) {
 
-        return new Nuple<>(x,y,z);
+        return new Tuple3<>(x,y,z);
+    }
+
+    public static <X, Y, W, Z> Tuple4<X, Y, W, Z> quple(final X x, final Y y, final W w, final Z z) {
+
+        return new Tuple4<>(x,y,w,z);
     }
 
     public static <X, Y> Tuple<X, Y> tuple(final X x, final Y y) {

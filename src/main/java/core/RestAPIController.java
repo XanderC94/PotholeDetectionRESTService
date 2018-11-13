@@ -23,7 +23,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static utils.Factory.nuple;
+import static utils.Factory.quple;
 import static utils.Regex.*;
 
 /**
@@ -374,42 +374,59 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.PUT, value = "/{id}", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Integer> comment(@PathVariable Integer id,
-                                                       @RequestBody String body,
-                                                       Model model) throws Exception{
+    public @ResponseBody RESTResource<Integer> addFeedback(@PathVariable Integer id,
+                                                           @RequestBody String body,
+                                                           Model model) throws Exception {
 
-        final Comment comment = gson.fromJson(body, Comment.class);
+        final UserFeedback userFeedback = gson.fromJson(body, UserFeedback.class);
 
-        if (id.equals(comment.getMarkerID())) {
-            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + comment.getMarkerID() + ")");
+        if (id != userFeedback.getMarkerID()) {
+            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + userFeedback.getMarkerID() + ")");
         }
 
         Handle handler = JdbiSingleton.getInstance().open();
+        int res;
+        String info = "";
 
+        if (userFeedback.isUpvote()) { // Add Upvote
 
-        Integer res;
-        try {
-            res = handler
-                    .createUpdate(SQL.insertCommentToMarkerQuery)
-                    .bind("marker_id", comment.getMarkerID())
-                    .bind("text", Utils.stringify(comment.getText()))
-                    .execute();
-        } catch (Exception e) {
-            throw new DBQueryExecutionException("Unable to execute statement on the DB");
+            res = handler.createUpdate(SQL.upvoteMarkerQuery)
+                    .bind("marker_id", userFeedback.getMarkerID()).execute();
+
+            info = String.format("Added Upvote to %d on date %s;\n", id, DateTime.now().toLocalDateTime());
+        }
+
+        if (!userFeedback.getText().isEmpty()) { // Add Comment
+            try {
+                res = handler
+                        .createUpdate(SQL.insertCommentToMarkerQuery)
+                        .bind("marker_id", userFeedback.getMarkerID())
+                        .bind("text", Utils.stringify(userFeedback.getText()))
+                        .execute();
+
+                info = String.join("",
+                        info,
+                        String.format("Added Comment %s to %d on date %s;\n",
+                        userFeedback.getText(), id, DateTime.now().toLocalDateTime()))
+                ;
+
+            } catch (Exception e) {
+                throw new DBQueryExecutionException("Unable to execute statement on the DB");
+            }
+        } else {
+            throw new WrongBodyDataException("Empty Comment.");
         }
 
         handler.close();
 
-        return new RESTResource<>(counter.incrementAndGet(), res)
-                .withInfo(String.format("Added Comment %s to %d on date %s",
-                        comment.getText(), id, DateTime.now().toLocalDateTime())
-                );
+        return new RESTResource<>(counter.incrementAndGet(), res).withInfo(info);
     }
 
     private List<Marker> resolveQuery(final Query q) throws Exception{
-        List<Nuple<Integer, String, String>> resultSets =
-                q.map((rs, ctx) -> nuple(
+        List<Tuple4<Integer, Integer, String, String>> resultSets =
+                q.map((rs, ctx) -> quple(
                         rs.getInt("ID"),
+                        rs.getInt("N_DETECTIONS"),
                         rs.getString("coordinates"),
                         rs.getString("addressNode")
                 )).list();
@@ -418,10 +435,11 @@ public class RestAPIController {
 
 //        println(resultSets);
 
-        for (Nuple<Integer, String, String> n : resultSets) {
+        for (Tuple4<Integer, Integer, String, String> n : resultSets) {
             res.add(new Marker(
-                    Long.valueOf(n.getX()), 0,
-                    GeoCoordinates.fromString(n.getY()),
+                    Long.valueOf(n.getX()),
+                    Long.valueOf(n.getY()),
+                    GeoCoordinates.fromString(n.getW()),
                     gson.fromJson(n.getZ(), OSMAddressNode.class).unfiltered()
             ));
         }
