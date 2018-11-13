@@ -374,19 +374,19 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{id}", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Marker> getMarkerByUId(@PathVariable Integer uid,
+    public @ResponseBody RESTResource<Marker> getMarkerByUId(@PathVariable Integer id,
                                                               Model model) throws Exception {
         String info;
         Handle handler = JdbiSingleton.getInstance().open();
 
-        Query q = handler.select(SQL.selectMarkerByUId).bind("marker_id", uid);
+        Query q = handler.select(SQL.selectMarkerByUId).bind("marker_id", id);
 
         List<Marker> res = resolveQuery(q);
 
         handler.close();
 
         if (res.isEmpty()) {
-            info = String.format("Added no matching marker with id=%d;\n", uid);
+            info = String.format("Added no matching marker with id=%d;\n", id);
             return new RESTResource<>(counter.incrementAndGet(), new Marker()).withInfo(info);
         }
 
