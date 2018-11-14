@@ -12,7 +12,7 @@ import org.jdbi.v3.core.statement.Query;
 import org.joda.time.DateTime;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import rest.RESTResource;
+import rest.RESTResponse;
 import utils.*;
 
 import java.io.IOException;
@@ -64,7 +64,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "")
-    public @ResponseBody RESTResource<List<Marker>> collect(Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<List<Marker>> collect(Model model) throws Exception {
 
         return getResources(defaultCountry, defaultRegion, defaultCounty, defaultTown, defaultRoad, model);
 
@@ -72,7 +73,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{country}")
-    public @ResponseBody RESTResource<List<Marker>> collect(
+    public @ResponseBody
+    RESTResponse<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             Model model) throws Exception {
 
@@ -82,7 +84,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}")
-    public @ResponseBody RESTResource<List<Marker>> collect(
+    public @ResponseBody
+    RESTResponse<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
             Model model) throws Exception {
@@ -92,7 +95,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}")
-    public @ResponseBody RESTResource<List<Marker>> collect(
+    public @ResponseBody
+    RESTResponse<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
             @PathVariable(value = "county") String county,
@@ -103,7 +107,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}")
-    public @ResponseBody RESTResource<List<Marker>> collect(
+    public @ResponseBody
+    RESTResponse<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
             @PathVariable(value = "county") String county,
@@ -115,7 +120,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{country}/{region}/{county}/{town}/{road}")
-    public @ResponseBody RESTResource<List<Marker>> collect(
+    public @ResponseBody
+    RESTResponse<List<Marker>> collect(
             @PathVariable(value = "country") String country,
             @PathVariable(value = "region") String region,
             @PathVariable(value = "county") String county,
@@ -129,14 +135,15 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/road/{road_name}")
-    public @ResponseBody RESTResource<List<Marker>> road(
+    public @ResponseBody
+    RESTResponse<List<Marker>> road(
             @PathVariable(value = "road_name") String road,
             Model model) throws Exception {
 
         return getResources(defaultCountry, defaultRegion, defaultCounty, defaultTown, road, model);
     }
 
-    private RESTResource<List<Marker>> getResources(
+    private RESTResponse<List<Marker>> getResources(
             String country, String region, String county, String town, String road, Model model
     ) throws Exception {
 
@@ -176,17 +183,18 @@ public class RestAPIController {
 
 //        Utils.println(res.stream().map(r -> r.getCoordinates().toString()).collect(Collectors.toList()));
 
-        return new RESTResource<>(counter.incrementAndGet(), res);
+        return new RESTResponse<>(counter.incrementAndGet(), res);
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/route")
-    public @ResponseBody RESTResource<RoutesResponse> route(@RequestParam("from") String from,
-                                                          @RequestParam("to") String to,
-                                                          @RequestParam(value = "dist", required = false, defaultValue = "100") Integer dist,
-                                                          @RequestParam(value = "mode", required = false, defaultValue = "driving-car") String mode,
-                                                          @RequestParam(value = "route", required = false, defaultValue = "recommended") String route,
-                                                          Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<RoutesResponse> route(@RequestParam("from") String from,
+                                       @RequestParam("to") String to,
+                                       @RequestParam(value = "dist", required = false, defaultValue = "100") Integer dist,
+                                       @RequestParam(value = "mode", required = false, defaultValue = "driving-car") String mode,
+                                       @RequestParam(value = "route", required = false, defaultValue = "recommended") String route,
+                                       Model model) throws Exception {
 
         Tuple<Optional<GeoCoordinates>, String>
                 testFrom = Formatting.checkCoordinatesFormat(from),
@@ -256,12 +264,12 @@ public class RestAPIController {
 
             handler.close();
 
-//            return new RESTResource<List<Marker>>(counter.incrementAndGet(), new ArrayList<>(results))
+//            return new RESTResponse<List<Marker>>(counter.incrementAndGet(), new ArrayList<>(results))
 //                    .withInfo(bodyCache);
 
             RoutesResponse response = new RoutesResponse(new ArrayList<>(results), bodyCache);
 
-            RESTResource<RoutesResponse> result = new RESTResource<RoutesResponse>(counter.incrementAndGet(), response)
+            RESTResponse<RoutesResponse> result = new RESTResponse<RoutesResponse>(counter.incrementAndGet(), response)
                     .withInfo("Routes founded");
 
             return result;
@@ -269,7 +277,7 @@ public class RestAPIController {
         } else {
 
             RoutesResponse response = new RoutesResponse(new ArrayList<>(), "");
-            return new RESTResource<RoutesResponse>(counter.incrementAndGet(), response)
+            return new RESTResponse<RoutesResponse>(counter.incrementAndGet(), response)
                     .withInfo("{" +
                             "\"info\":\"There is no viable route from "+ from + " to " + to + "\", " +
                             "\"queryOutput\":" + bodyCache +
@@ -279,8 +287,9 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/at")
-    public @ResponseBody RESTResource<Marker> getMarkerAt(@RequestParam("coordinates") String point,
-                                                          Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<Marker> getMarkerAt(@RequestParam("coordinates") String point,
+                                     Model model) throws Exception {
 
         GeoCoordinates coordinates = GeoCoordinates.fromString(point);
 
@@ -293,26 +302,28 @@ public class RestAPIController {
                     coordinates.toString());
         }
 
-        return  new RESTResource<>(counter.incrementAndGet(), res.get(0));
+        return  new RESTResponse<>(counter.incrementAndGet(), res.get(0));
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/area")
-    public @ResponseBody RESTResource<List<Marker>> area(@RequestParam("origin") String origin,
-                                                         @RequestParam("radius") Double radius,
-                                                         Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<List<Marker>> area(@RequestParam("origin") String origin,
+                                    @RequestParam("radius") Double radius,
+                                    Model model) throws Exception {
 
         GeoCoordinates gcOrigin = GeoCoordinates.fromString(origin);
 
-        return new RESTResource<>(counter.incrementAndGet(), getElementsInArea(gcOrigin, radius));
+        return new RESTResponse<>(counter.incrementAndGet(), getElementsInArea(gcOrigin, radius));
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/geodecode")
-    public @ResponseBody RESTResource<GeoCoordinates> geodecode(
+    public @ResponseBody
+    RESTResponse<GeoCoordinates> geodecode(
             @RequestParam("place") String place, Model model) {
 
-        return new RESTResource<>(
+        return new RESTResponse<>(
                 counter.incrementAndGet(),
                 geoCoding(place).orElse(GeoCoordinates.empty())
         );
@@ -320,10 +331,11 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/reverse")
-    public @ResponseBody RESTResource<OSMAddressNode> reverse(
+    public @ResponseBody
+    RESTResponse<OSMAddressNode> reverse(
             @RequestParam("coordinates") String coordinates, Model model) throws Exception {
 
-        return new RESTResource<>(
+        return new RESTResponse<>(
                 counter.incrementAndGet(),
                 reverseGeoCoding(GeoCoordinates.fromString(coordinates))
                         .orElse(OSMAddressNode.empty()).unfiltered()
@@ -332,7 +344,8 @@ public class RestAPIController {
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Integer> add(@RequestBody String body, Model model) {
+    public @ResponseBody
+    RESTResponse<Integer> add(@RequestBody String body, Model model) {
 
         Utils.println(body);
 
@@ -369,13 +382,14 @@ public class RestAPIController {
             throw new DBQueryExecutionException("Error occured during the marker adding");
         }
 
-        return new RESTResource<>(counter.incrementAndGet(), responseValue);
+        return new RESTResponse<>(counter.incrementAndGet(), responseValue);
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/{id}", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Marker> getMarkerByUId(@PathVariable Integer id,
-                                                              Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<Marker> getMarkerByUId(@PathVariable Integer id,
+                                        Model model) throws Exception {
         String info;
         Handle handler = JdbiSingleton.getInstance().open();
 
@@ -387,21 +401,35 @@ public class RestAPIController {
 
         if (res.isEmpty()) {
             info = String.format("Added no matching marker with id=%d;\n", id);
-            return new RESTResource<>(counter.incrementAndGet(), new Marker()).withInfo(info);
+            return new RESTResponse<>(counter.incrementAndGet(), new Marker()).withInfo(info);
         }
 
-        return new RESTResource<>(counter.incrementAndGet(), res.get(0));
+        return new RESTResponse<>(counter.incrementAndGet(), res.get(0));
+    }
+
+    @CrossOrigin(origins = "*")
+    @RequestMapping(method = RequestMethod.POST, value = "/register", headers="Content-Type=application/json; charset=utf-8")
+    public @ResponseBody
+    RESTResponse<String> addToken(@RequestBody String token, Model model)
+            throws TokenManager.EmptyTokenException, TokenManager.AlreadyRegisteredException {
+
+        TokenManager.getInstance().addToken(token);
+
+        Utils.log(String.format("Token %s registered!", token));
+
+        return new RESTResponse<>(counter.incrementAndGet(), "Token successfully Registered!");
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.PUT, value = "/{id}/upvote", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Integer> addUpvote(@PathVariable Integer id,
-                                                           @RequestBody String body,
-                                                           Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<Integer> addUpvote(@PathVariable Integer id,
+                                    @RequestBody String body,
+                                    Model model) throws Exception {
 
         final Upvote upvote = gson.fromJson(body, Upvote.class);
 
-        Utils.println(upvote.toString());
+//        Utils.println(upvote.toString());
 
         int res;
         String info;
@@ -411,6 +439,8 @@ public class RestAPIController {
             throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + upvote.getMarkerId() + ")");
         }
 
+        TokenManager.getInstance().register(upvote.getToken(), upvote.getMarkerId());
+
         res = handler.createUpdate(SQL.upvoteMarkerQuery)
                 .bind("marker_id", upvote.getMarkerId()).execute();
 
@@ -418,14 +448,15 @@ public class RestAPIController {
 
         handler.close();
 
-        return new RESTResource<>(counter.incrementAndGet(), res).withInfo(info);
+        return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.PUT, value = "/{id}/comment", headers="Content-Type=application/json; charset=utf-8")
-    public @ResponseBody RESTResource<Integer> addFeedback(@PathVariable Integer id,
-                                                           @RequestBody String body,
-                                                           Model model) throws Exception {
+    public @ResponseBody
+    RESTResponse<Integer> addFeedback(@PathVariable Integer id,
+                                      @RequestBody String body,
+                                      Model model) throws Exception {
 
         final UserFeedback userFeedback = gson.fromJson(body, UserFeedback.class);
 
@@ -459,7 +490,7 @@ public class RestAPIController {
 
         handler.close();
 
-        return new RESTResource<>(counter.incrementAndGet(), res).withInfo(info);
+        return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
     }
 
     private List<Marker> resolveQuery(final Query q) throws Exception{

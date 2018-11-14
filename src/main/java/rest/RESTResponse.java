@@ -1,13 +1,13 @@
 package rest;
 
-public class RESTResource<T> {
+public class RESTResponse<T> {
 
     private final long id;
 
     private T content;
     private String info = "";
 
-    public RESTResource(long id, T content) {
+    public RESTResponse(long id, T content) {
         this.id = id;
         this.content = content;
     }
@@ -33,7 +33,7 @@ public class RESTResource<T> {
         this.info = info;
     }
 
-    public RESTResource<T> withInfo(String info) {
+    public RESTResponse<T> withInfo(String info) {
         this.setInfo(info);
 
         return this;
