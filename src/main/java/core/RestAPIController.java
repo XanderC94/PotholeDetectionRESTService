@@ -2,6 +2,7 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import core.exceptions.*;
 import json.*;
 import org.jdbi.v3.core.Handle;
@@ -10,9 +11,13 @@ import org.joda.time.DateTime;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import rest.RESTResponse;
-import utils.*;
+import utils.Formatting;
+import utils.HTTP;
+import utils.SQL;
+import utils.Utils;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -342,44 +347,52 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody
-    RESTResponse<Integer> add(@RequestBody String body, Model model) {
+    RESTResponse<String> add(@RequestBody String body, Model model) throws Exception {
 
         Utils.println(body);
+        final Type type = new TypeToken<CURequest<GeoCoordinates>>(){}.getType();
+        final CURequest<GeoCoordinates> stub = gson.fromJson(body, type);
 
-        GeoCoordinates coordinates = gson.fromJson(body, GeoCoordinates.class);
+        final GeoCoordinates coordinates = stub.getContent();
+        final String registration = stub.getToken();
 
-        Optional<OSMAddressNode> reversedCoordinates = reverseGeoCoding(coordinates);
+        if (TokenManager.getInstance().hasToken(registration)) {
+            Optional<OSMAddressNode> reversedCoordinates = reverseGeoCoding(coordinates);
 
-        Handle handler = JdbiSingleton.getInstance().open();
+            Handle handler = JdbiSingleton.getInstance().open();
 
-        final Integer responseValue = reversedCoordinates
-                .map(node -> handler
-                        .createUpdate(SQL.insertMarkerQuery)
-                        .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
-                        .bind("country", Utils.stringify(node.getCountry()))
-                        .bind("country_code", Utils.stringify(node.getCountryCode()))
-                        .bind("region", Utils.stringify(node.getRegion()))
-                        .bind("county", Utils.stringify(node.getCounty()))
-                        .bind("city", Utils.stringify(node.getCity()))
-                        .bind("district", Utils.stringify(node.getDistrict()))
-                        .bind("suburb", Utils.stringify(node.getSuburb()))
-                        .bind("town", Utils.stringify(node.getTown()))
-                        .bind("village", Utils.stringify(node.getVillage()))
-                        .bind("place", Utils.stringify(node.getPlace()))
-                        .bind("postcode", Utils.stringify(node.getPostcode()))
-                        .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
-                        .bind("road", Utils.stringify(node.getRoad()))
-                        .bind("house_number", node.getHouseNumber())
-                        .execute()
-                ).orElse(-1);
+            final Integer responseValue = reversedCoordinates
+                    .map(node -> handler
+                            .createUpdate(SQL.insertMarkerQuery)
+                            .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
+                            .bind("country", Utils.stringify(node.getCountry()))
+                            .bind("country_code", Utils.stringify(node.getCountryCode()))
+                            .bind("region", Utils.stringify(node.getRegion()))
+                            .bind("county", Utils.stringify(node.getCounty()))
+                            .bind("city", Utils.stringify(node.getCity()))
+                            .bind("district", Utils.stringify(node.getDistrict()))
+                            .bind("suburb", Utils.stringify(node.getSuburb()))
+                            .bind("town", Utils.stringify(node.getTown()))
+                            .bind("village", Utils.stringify(node.getVillage()))
+                            .bind("place", Utils.stringify(node.getPlace()))
+                            .bind("postcode", Utils.stringify(node.getPostcode()))
+                            .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
+                            .bind("road", Utils.stringify(node.getRoad()))
+                            .bind("house_number", node.getHouseNumber())
+                            .execute()
+                    ).orElse(-1);
 
-        handler.close();
+            handler.close();
 
-        if(responseValue == -1) {
-            throw new DBQueryExecutionException("Error occured during the marker adding");
+            if(responseValue == -1) {
+                throw new DBQueryExecutionException("Error occured during the marker adding");
+            }
+
+            return new RESTResponse<>(counter.incrementAndGet(), "Marker successfully added");
+        } else {
+            throw new AbsentTokenException(registration);
         }
 
-        return new RESTResponse<>(counter.incrementAndGet(), responseValue);
     }
 
     @CrossOrigin(origins = "*")
@@ -426,7 +439,10 @@ public class RestAPIController {
                                     @RequestBody String body,
                                     Model model) throws Exception {
 
-        final Upvote upvote = gson.fromJson(body, Upvote.class);
+        final Type type = new TypeToken<CURequest<Upvote>>(){}.getType();
+        final CURequest<Upvote> stub = gson.fromJson(body, type);
+
+        final Upvote upvote = stub.getContent();
 
 //        Utils.println(upvote.toString());
 
@@ -445,7 +461,7 @@ public class RestAPIController {
 
         handler.close();
 
-        TokenManager.getInstance().register(upvote.getToken(), upvote.getMarkerId());
+        TokenManager.getInstance().register(stub.getToken(), upvote.getMarkerId());
 
         return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
     }
@@ -457,39 +473,47 @@ public class RestAPIController {
                                       @RequestBody String body,
                                       Model model) throws Exception {
 
-        final UserFeedback userFeedback = gson.fromJson(body, UserFeedback.class);
+        final Type type = new TypeToken<CURequest<UserFeedback>>(){}.getType();
+        final CURequest<UserFeedback> stub = gson.fromJson(body, type);
+
+        final UserFeedback userFeedback = stub.getContent();
+        final String registration = stub.getToken();
 
         if (id != userFeedback.getMarkerId()) {
             throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + userFeedback.getMarkerId() + ")");
         }
 
-        Handle handler = JdbiSingleton.getInstance().open();
-        int res;
-        String info;
+        if (TokenManager.getInstance().hasToken(registration)) {
+            Handle handler = JdbiSingleton.getInstance().open();
+            int res;
+            String info;
 
-        if (!userFeedback.getText().isEmpty()) { // Add Comment
-            try {
-                res = handler
-                        .createUpdate(SQL.insertCommentToMarkerQuery)
-                        .bind("marker_id", userFeedback.getMarkerId())
-                        .bind("text", Utils.stringify(userFeedback.getText()))
-                        .execute();
+            if (!userFeedback.getText().isEmpty()) { // Add Comment
+                try {
+                    res = handler
+                            .createUpdate(SQL.insertCommentToMarkerQuery)
+                            .bind("marker_id", userFeedback.getMarkerId())
+                            .bind("text", Utils.stringify(userFeedback.getText()))
+                            .execute();
 
-                info = String.format(
-                        "Added Comment %s to %d on date %s;\n",
-                        userFeedback.getText(), id, DateTime.now().toLocalDateTime()
-                );
+                    info = String.format(
+                            "Added Comment %s to %d on date %s;\n",
+                            userFeedback.getText(), id, DateTime.now().toLocalDateTime()
+                    );
 
-            } catch (Exception e) {
-                throw new DBQueryExecutionException("Unable to execute statement on the DB");
+                } catch (Exception e) {
+                    throw new DBQueryExecutionException("Unable to execute statement on the DB");
+                }
+            } else {
+                throw new WrongBodyDataException("Empty Comment.");
             }
+
+            handler.close();
+
+            return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
         } else {
-            throw new WrongBodyDataException("Empty Comment.");
+            throw new AbsentTokenException(registration);
         }
-
-        handler.close();
-
-        return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
     }
 
     private List<Marker> resolveQuery(final Query q) throws Exception{
@@ -497,8 +521,8 @@ public class RestAPIController {
                 q.map((rs, ctx) -> tuple4(
                         rs.getInt("ID"),
                         rs.getInt("N_DETECTIONS"),
-                        rs.getString("coordinates"),
-                        rs.getString("addressNode")
+                        rs.getString("coordinates").replace("\'", ""),
+                        rs.getString("addressNode").replace("\'", "")
                 )).list();
 
         List<Marker> res = new ArrayList<>();

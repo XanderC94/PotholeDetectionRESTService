@@ -1,20 +1,20 @@
 spring:
   profiles: dev
 server:
-  port: 9080
-  address: "192.168.1.12"
+  port: 8080
+  address: "192.168.0.16"
 ---
 
 spring:
   profiles: dist
 server:
-  port: 9443
+  port: 8080
   ssl:
     key-store: classpath:ssl/keystore.p12
     key-store-password: pumpkins
     keyStoreType: PKCS12
     keyAlias: https-rest-service-key
-  address: "192.168.1.12"
+  address: "192.168.0.16"
 
 ---
 
