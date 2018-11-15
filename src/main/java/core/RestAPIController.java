@@ -363,23 +363,23 @@ public class RestAPIController {
 
             final Integer responseValue = reversedCoordinates
                     .map(node -> handler
-                            .createUpdate(SQL.insertMarkerQuery)
-                            .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
-                            .bind("country", Utils.stringify(node.getCountry()))
-                            .bind("country_code", Utils.stringify(node.getCountryCode()))
-                            .bind("region", Utils.stringify(node.getRegion()))
-                            .bind("county", Utils.stringify(node.getCounty()))
-                            .bind("city", Utils.stringify(node.getCity()))
-                            .bind("district", Utils.stringify(node.getDistrict()))
-                            .bind("suburb", Utils.stringify(node.getSuburb()))
-                            .bind("town", Utils.stringify(node.getTown()))
-                            .bind("village", Utils.stringify(node.getVillage()))
-                            .bind("place", Utils.stringify(node.getPlace()))
-                            .bind("postcode", Utils.stringify(node.getPostcode()))
-                            .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
-                            .bind("road", Utils.stringify(node.getRoad()))
-                            .bind("house_number", node.getHouseNumber())
-                            .execute()
+                        .createUpdate(SQL.insertMarkerQuery)
+                        .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
+                        .bind("country", Utils.stringify(node.getCountry()))
+                        .bind("country_code", Utils.stringify(node.getCountryCode()))
+                        .bind("region", Utils.stringify(node.getRegion()))
+                        .bind("county", Utils.stringify(node.getCounty()))
+                        .bind("city", Utils.stringify(node.getCity()))
+                        .bind("district", Utils.stringify(node.getDistrict()))
+                        .bind("suburb", Utils.stringify(node.getSuburb()))
+                        .bind("town", Utils.stringify(node.getTown()))
+                        .bind("village", Utils.stringify(node.getVillage()))
+                        .bind("place", Utils.stringify(node.getPlace()))
+                        .bind("postcode", Utils.stringify(node.getPostcode()))
+                        .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
+                        .bind("road", Utils.stringify(node.getRoad()))
+                        .bind("house_number", node.getHouseNumber())
+                        .execute()
                     ).orElse(-1);
 
             handler.close();
@@ -420,8 +420,7 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "/register", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody
-    RESTResponse<String> addToken(@RequestBody String registration, Model model)
-            throws EmptyTokenException, AlreadyRegisteredException, UninitializedServiceException {
+    RESTResponse<String> addToken(@RequestBody String registration, Model model) throws Exception {
 
         String token = gson.fromJson(registration, Registration.class).getToken();
 
@@ -444,8 +443,6 @@ public class RestAPIController {
 
         final Upvote upvote = stub.getContent();
 
-//        Utils.println(upvote.toString());
-
         int res;
         String info;
         Handle handler = JdbiSingleton.getInstance().open();
@@ -454,6 +451,8 @@ public class RestAPIController {
             throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + upvote.getMarkerId() + ")");
         }
 
+        TokenManager.getInstance().register(stub.getToken(), upvote.getMarkerId());
+
         res = handler.createUpdate(SQL.upvoteMarkerQuery)
                 .bind("marker_id", upvote.getMarkerId()).execute();
 
@@ -461,9 +460,8 @@ public class RestAPIController {
 
         handler.close();
 
-        TokenManager.getInstance().register(stub.getToken(), upvote.getMarkerId());
-
         return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
+
     }
 
     @CrossOrigin(origins = "*")
