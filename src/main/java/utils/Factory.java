@@ -4,12 +4,12 @@ import json.*;
 
 public class Factory {
 
-    public static <X, Y, Z> Tuple3<X, Y, Z> nuple(final X x, final Y y, final Z z) {
+    public static <X, Y, Z> Tuple3<X, Y, Z> tuple3(final X x, final Y y, final Z z) {
 
         return new Tuple3<>(x,y,z);
     }
 
-    public static <X, Y, W, Z> Tuple4<X, Y, W, Z> quple(final X x, final Y y, final W w, final Z z) {
+    public static <X, Y, W, Z> Tuple4<X, Y, W, Z> tuple4(final X x, final Y y, final W w, final Z z) {
 
         return new Tuple4<>(x,y,w,z);
     }

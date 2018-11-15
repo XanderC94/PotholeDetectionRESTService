@@ -2,10 +2,7 @@ package core;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import core.exceptions.DBQueryExecutionException;
-import core.exceptions.FormatException;
-import core.exceptions.MarkerNotFoundException;
-import core.exceptions.WrongBodyDataException;
+import core.exceptions.*;
 import json.*;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
@@ -23,7 +20,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static utils.Factory.quple;
+import static utils.Factory.tuple4;
 import static utils.Regex.*;
 
 /**
@@ -410,8 +407,10 @@ public class RestAPIController {
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.POST, value = "/register", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody
-    RESTResponse<String> addToken(@RequestBody String token, Model model)
-            throws TokenManager.EmptyTokenException, TokenManager.AlreadyRegisteredException {
+    RESTResponse<String> addToken(@RequestBody String registration, Model model)
+            throws EmptyTokenException, AlreadyRegisteredException, UninitializedServiceException {
+
+        String token = gson.fromJson(registration, Registration.class).getToken();
 
         TokenManager.getInstance().addToken(token);
 
@@ -439,14 +438,14 @@ public class RestAPIController {
             throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + upvote.getMarkerId() + ")");
         }
 
-        TokenManager.getInstance().register(upvote.getToken(), upvote.getMarkerId());
-
         res = handler.createUpdate(SQL.upvoteMarkerQuery)
                 .bind("marker_id", upvote.getMarkerId()).execute();
 
         info = String.format("Added Upvote to %d on date %s;\n", id, DateTime.now().toLocalDateTime());
 
         handler.close();
+
+        TokenManager.getInstance().register(upvote.getToken(), upvote.getMarkerId());
 
         return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
     }
@@ -495,7 +494,7 @@ public class RestAPIController {
 
     private List<Marker> resolveQuery(final Query q) throws Exception{
         List<Tuple4<Integer, Integer, String, String>> resultSets =
-                q.map((rs, ctx) -> quple(
+                q.map((rs, ctx) -> tuple4(
                         rs.getInt("ID"),
                         rs.getInt("N_DETECTIONS"),
                         rs.getString("coordinates"),
