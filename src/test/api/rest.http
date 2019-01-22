@@ -1,0 +1,186 @@
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/Italia/
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/Italia/Emilia-Romagna
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/Italia/Emilia-Romagna/Rimini
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/Italia/Emilia-Romagna/Rimini/Riccione
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/road/Viale Adua 41, Riccione
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/at?coordinates=11,44
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/area?origin=11,44&radius=1000
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{}
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/id/47
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{ }
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/reverse?coordinates=11E,44N
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{ }
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/geodecode?place=Riccione
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{ }
+
+###
+
+GET http://192.168.1.12:8080/api/pothole/route?from=Riccione&to=Bologna
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{  }
+
+###
+
+PUT http://192.168.1.12:8080/api/pothole/47/upvote
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{
+  "token": "A",
+  "content": {
+    "markerId": 47
+  }
+}
+
+###
+
+PUT http://192.168.1.12:8080/api/pothole/50/upvote
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{
+  "token": "09d75776b535ccdca39250ea8c1b071c",
+  "content": {
+    "markerId": 50
+  }
+}
+
+###
+
+PUT http://192.168.1.12:8080/api/pothole/47/comment
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{
+  "token": "09d75776b535ccdca39250ea8c1b071c",
+  "content": {
+    "markerId": 47,
+    "date": "",
+    "text": "banana"
+  }
+}
+
+###
+
+PUT http://192.168.1.12:8080/api/pothole/47/comment
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{
+  "token": "A",
+  "content": {
+    "markerId": 47,
+    "date": "",
+    "text": "banana"
+  }
+}
+
+###
+
+POST http://192.168.1.12:8080/api/pothole/
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{
+  "token": "09d75776b535ccdca39250ea8c1b071c",
+  "content": {
+    "lat": 44,
+    "lng": 11
+  }
+}
+
+###
+
+POST http://192.168.1.12:8080/api/pothole/register
+Accept: */*
+Content-Type: application/json
+charset: utf-8
+
+{"token": "09d75776b535ccdca39250ea8c1b071c"}
+
+###
+

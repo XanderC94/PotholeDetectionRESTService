@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 import static utils.SQL.COMMENT.MARKER_ID;
 import static utils.SQL.COMMENT.POSTING_DATE;
 import static utils.SQL.MARKER.*;
-import static utils.Utils.println;
+import static utils.Logging.println;
 
 @SuppressWarnings({"SpellCheckingInspection", "unused", "FieldCanBeLocal"})
 public class SQL {

@@ -32,7 +32,7 @@ public abstract class NameFilter<T> {
 
     public static void main(String[] args) {
 
-        Utils.println(System.getProperty("user.dir").replace('\\', '/'));
+        Logging.println(System.getProperty("user.dir").replace('\\', '/'));
 
         try {
 
@@ -45,32 +45,32 @@ public abstract class NameFilter<T> {
                     .withSeparator(',').withQuoteChar('\"').build().parse();
 
             p.forEach(e -> {
-                Utils.println(
+                Logging.println(
                         String.valueOf(f1.filter(e.getName().toLowerCase()).equals(e.getIso()))
                 );
             });
 
             p.forEach(e -> {
 
-                Utils.println(
+                Logging.println(
                         String.valueOf(f1.filter(e.getIso().toLowerCase()).equals(e.getIso()))
                 );
             });
 
             p.forEach(e -> {
-                Utils.println(
+                Logging.println(
                         String.valueOf(f1.unfilter(e.getName().toLowerCase()).equals(e.getName()))
                 );
             });
 
             p.forEach(e -> {
 
-                Utils.println(
+                Logging.println(
                         String.valueOf(f1.unfilter(e.getIso().toLowerCase()).equals(e.getName()))
                 );
             });
 
-            Utils.println("---------------------------------------------------------------------");
+            Logging.println("---------------------------------------------------------------------");
 
             NameFilter f2= new RegionFilter(states);
 
@@ -78,25 +78,25 @@ public abstract class NameFilter<T> {
                     .withSeparator(',').withQuoteChar('\"').build().parse();
 
             s.forEach(e -> {
-                Utils.println(
+                Logging.println(
                     String.valueOf(f2.filter(e.getName().toLowerCase()).equals(e.getSignature()))
                 );
             });
 
             s.forEach(e -> {
-                Utils.println(
+                Logging.println(
                     String.valueOf(f2.filter(e.getSignature().toLowerCase()).equals(e.getSignature()))
                 );
             });
 
             s.forEach(e -> {
-                Utils.println(
+                Logging.println(
                         String.valueOf(f2.unfilter(e.getSignature().toLowerCase()).equals(e.getName()))
                 );
             });
 
             s.forEach(e -> {
-                Utils.println(
+                Logging.println(
                         String.valueOf(f2.unfilter(e.getName().toLowerCase()).equals(e.getName()))
                 );
             });

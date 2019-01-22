@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import utils.Utils;
+import utils.Logging;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,14 +24,14 @@ public class PostgresConfig {
     @Autowired
     PostgresConfig(final DBProperties properties) {
         this.props = properties;
-        Utils.log("Config Loaded...");
-        Utils.log(this.toString());
+        Logging.log("Config Loaded...");
+        Logging.log(this.toString());
     }
 
     @Bean(name = "db")
     public DriverManagerDataSource getDataSource() {
 
-        Utils.log("Selecting Data source...");
+        Logging.log("Selecting Data source...");
 
         return new DriverManagerDataSource(
                     String.format(urlFormat,
@@ -47,26 +47,26 @@ public class PostgresConfig {
     @Bean(name = "plugins")
     public List<JdbiPlugin> getPlugins() {
 
-        Utils.log("Loading Plugins...");
+        Logging.log("Loading Plugins...");
 
         return plugins;
     }
 
     @Bean(name = "jdbi")
     public JdbiFactoryBean getJDBIFactory() {
-        Utils.log("Generating Jdbi Instance...");
+        Logging.log("Generating Jdbi Instance...");
         return new JdbiFactoryBean(getDataSource()).setPlugins(getPlugins());
     }
 
     @Bean(name = "service")
     public JdbiSingleton getJdbiConnectorInstance() throws Exception {
-        Utils.log("Wrapping Jdbi Singleton...");
+        Logging.log("Wrapping Jdbi Singleton...");
         return new JdbiSingleton(getJDBIFactory().getObject());
     }
 
     @Bean(name = "transactionManager")
     public DataSourceTransactionManager getTransactionManager() throws Exception {
-        Utils.log("Setting Transaction Manager...");
+        Logging.log("Setting Transaction Manager...");
         return new DataSourceTransactionManager(getDataSource());
     }
 

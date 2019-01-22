@@ -7,7 +7,7 @@ import core.exceptions.AlreadyRegisteredException;
 import core.exceptions.EmptyTokenException;
 import core.exceptions.UninitializedServiceException;
 import json.Registration;
-import utils.Utils;
+import utils.Logging;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -61,7 +61,7 @@ public class TokenManager {
                     l.parallelStream().collect(Collectors.toMap(Registration::getToken, Registration::getIds))
             );
         } catch (Exception e) {
-            Utils.log("Previous Token File not found. Will start Empty and Create a new one.");
+            Logging.log("Previous Token File not found. Will start Empty and Create a new one.");
 
             this.savefile.getParentFile().mkdirs();
             this.savefile.createNewFile();
@@ -126,7 +126,7 @@ public class TokenManager {
         executor.submit(() -> {
             try {
                 writeToSaveFile();
-                Utils.log(String.format("Saved id %s for token %s.", id, token));
+                Logging.log(String.format("Saved id %s for token %s.", id, token));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -137,7 +137,7 @@ public class TokenManager {
         executor.submit(() -> {
             try {
                 writeToSaveFile();
-                Utils.log(String.format("Saved token %s.", token));
+                Logging.log(String.format("Saved token %s.", token));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -165,7 +165,7 @@ public class TokenManager {
         }
 
         try {
-            Utils.println(TokenManager.getInstance().tokens.get("09d75776b535ccdca39250ea8c1b071c"));
+            Logging.println(TokenManager.getInstance().tokens.get("09d75776b535ccdca39250ea8c1b071c"));
         } catch (UninitializedServiceException e) {
             e.printStackTrace();
         }
@@ -177,7 +177,7 @@ public class TokenManager {
         }
 
         try {
-            Utils.println(TokenManager.getInstance().tokens.get("09d75776b535ccdca39250ea8c1b071c"));
+            Logging.println(TokenManager.getInstance().tokens.get("09d75776b535ccdca39250ea8c1b071c"));
         } catch (UninitializedServiceException e) {
             e.printStackTrace();
         }

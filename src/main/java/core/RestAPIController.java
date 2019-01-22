@@ -1,32 +1,23 @@
 package core;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
-import core.exceptions.*;
 import json.*;
-import org.jdbi.v3.core.Handle;
-import org.jdbi.v3.core.statement.Query;
 import org.joda.time.DateTime;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import rest.RESTResponse;
-import utils.Formatting;
-import utils.HTTP;
-import utils.SQL;
-import utils.Utils;
+import rest.create.DeviceSubscriber;
+import rest.create.MarkerInserter;
+import rest.read.*;
+import rest.update.FeedbackInserter;
+import rest.update.UpvoteUpdater;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.net.URLEncoder;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.regex.Matcher;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static utils.Factory.tuple4;
-import static utils.Regex.*;
+import static utils.Utils.defaultCountry;
+import static utils.Utils.defaultCounty;
+import static utils.Utils.defaultRegion;
+import static utils.Utils.defaultRoad;
+import static utils.Utils.defaultTown;
 
 /**
  *
@@ -36,31 +27,6 @@ import static utils.Regex.*;
 @RestController
 @RequestMapping("/api/pothole")
 public class RestAPIController {
-
-    private static final String UTF_8 = java.nio.charset.StandardCharsets.UTF_8.name();
-
-    private static final String ORS_API_KEY = "5b3ce3597851110001cf6248c396a2051da84b2ea36fa8e7f8f99d89";
-
-    private final String geoCodingURLFormat =
-            "https://nominatim.openstreetmap.org/search?q=%s&format=%s&polygon_geojson=1&limit=%d";
-    private final String reverseGeoCodingURLFormat =
-            "https://nominatim.openstreetmap.org/reverse?lon=%.9f&lat=%.9f&format=%s";
-
-    private final String openRoutingServiceURLFormat =
-            "https://api.openrouteservice.org/directions?" +
-                "api_key=%s&coordinates=%.9f,%.9f|%.9f,%.9f&profile=%s&preference=%s&geometry_format=%s";
-
-    private static final Gson gson = new GsonBuilder().create();
-
-    private final String defaultTown = "none";
-    private final String defaultCounty = "none";
-    private final String defaultCountry = "none";
-    private final String defaultRegion = "none";
-    private final String defaultRoad = "none";
-
-    // a variation of 0.0000089 degrees corresponds approximately to 1m variation
-    private final Double minimumDegreesVariation = 0.0000089;
-    private final Double minimumMetersVariation = 1.0;
 
     private final AtomicLong counter = new AtomicLong();
 
@@ -142,6 +108,8 @@ public class RestAPIController {
             @PathVariable(value = "road_name") String road,
             Model model) throws Exception {
 
+//        Logging.log(road);
+
         return getResources(defaultCountry, defaultRegion, defaultCounty, defaultTown, road, model);
     }
 
@@ -149,41 +117,7 @@ public class RestAPIController {
             String country, String region, String county, String town, String road, Model model
     ) throws Exception {
 
-        county = Utils.provincesFilter.filter(county);
-        region = Utils.regionFilter.filter(region);
-
-        Handle handler = JdbiSingleton.getInstance().open();
-
-        String filters = filters(country, region, county, town, road);
-//        Utils.println(filters);
-        Query q = handler.select(SQL.selectMarkersQuery.apply(filters));
-
-        if (!country.toLowerCase().equals(defaultCountry)) {
-            q = q.bind("country", Utils.stringify(country));
-        }
-
-        if (!region.toLowerCase().equals(defaultRegion)) {
-            q = q.bind("region", Utils.stringify(region));
-        }
-
-        if (!county.toLowerCase().equals(defaultCounty)) {
-            q = q.bind("county", Utils.stringify(county));
-        }
-
-        if (!town.toLowerCase().equals(defaultTown)) {
-            q = q.bind("town", Utils.stringify(town));
-            q = q.bind("city", Utils.stringify(town));
-        }
-
-        if (!road.toLowerCase().equals(defaultRoad)) {
-            q = q.bind("road", Utils.stringify(road));
-        }
-
-        List<Marker> res = resolveQuery(q);
-
-        handler.close();
-
-//        Utils.println(res.stream().map(r -> r.getCoordinates().toString()).collect(Collectors.toList()));
+        List<Marker> res = SelectorByHierarchy.getResources(country, region, county, town, road, model);
 
         return new RESTResponse<>(counter.incrementAndGet(), res);
     }
@@ -198,92 +132,21 @@ public class RestAPIController {
                                        @RequestParam(value = "route", required = false, defaultValue = "recommended") String route,
                                        Model model) throws Exception {
 
-        Tuple<Optional<GeoCoordinates>, String>
-                testFrom = Formatting.checkCoordinatesFormat(from),
-                testTo = Formatting.checkCoordinatesFormat(to);
 
-        Utils.log((testFrom.getX().isPresent() || testTo.getX().isPresent() ?
-                "Routing by Coordinates..." : "Routing by place...")
-                + "from " + from + " to " + to
-        );
+        RoutesResponse response = RouteSelector.route(from, to, dist, mode, route, model);
 
-        Optional<GeoCoordinates>
-            optFrom = Optional.ofNullable(testTo.getX().orElse(this.geoCoding(from).orElse(null))),
-            optTo = Optional.ofNullable(testTo.getX().orElse(this.geoCoding(to).orElse(null)));
-
-        GeoCoordinates
-                orig = optFrom.orElseThrow(() -> new FormatException(testFrom.getY() + " or Invalid Location")),
-                dest = optTo.orElseThrow(() -> new FormatException(testTo.getY() + " or Invalid Location"));
-
-        Utils.log(Arrays.asList(orig, dest));
-
-        final String url = String.format(openRoutingServiceURLFormat, ORS_API_KEY,
-                orig.getLng(), orig.getLat(),
-                dest.getLng(), dest.getLat(),
-                mode, route, "geojson"
-                );
-
-        Utils.log(url);
-
-        final String bodyCache = HTTP.get(url);
-
-        final Matcher matcher1 = routeGeometry.matcher(bodyCache);
-
-        if (matcher1.find()) {
-
-//            println(matcher1.group(1).trim());
-
-            final Matcher matcher2 = coordinatesTuple.matcher(matcher1.group(1).trim());
-
-            final List<GeoCoordinates> vertices = new ArrayList<>();
-
-            while (matcher2.find()) {
-                vertices.add(GeoCoordinates.fromString(matcher2.group(0)));
-            }
-
-            final Handle handler = JdbiSingleton.getInstance().open();
-
-            final Query q = handler.select(SQL.selectOnRouteQuery);
-
-            final Set<Marker> results = new HashSet<>();
-
-            final List<Segment> segments = IntStream.range(1, vertices.size())
-                    .mapToObj(i -> new Segment(vertices.get(i-1), vertices.get(i)))
-                    .collect(Collectors.toList());
-
-            for (Segment s : segments) {
-                // NOTE: Latitude (X) and Longitude (Y) are the angles of in degrees
-                // of a point on the sphere surface from the Origin.
-                // Need to bind
-                q.bind("y_A", s.getA().getLat())
-                        .bind("x_A", s.getA().getLng())
-                        .bind("y_B", s.getB().getLat())
-                        .bind("x_B", s.getB().getLng())
-                        .bind("dist", dist);
-
-                results.addAll(this.resolveQuery(q));
-            }
-
-            handler.close();
-
-//            return new RESTResponse<List<Marker>>(counter.incrementAndGet(), new ArrayList<>(results))
-//                    .withInfo(bodyCache);
-
-            RoutesResponse response = new RoutesResponse(new ArrayList<>(results), bodyCache);
-
-            RESTResponse<RoutesResponse> result = new RESTResponse<RoutesResponse>(counter.incrementAndGet(), response)
-                    .withInfo("Routes founded");
-
-            return result;
+        if(response.getMarkers().isEmpty()){
+            return new RESTResponse<>(counter.incrementAndGet(), response)
+                    .withInfo("{" +
+                            "\"info\":\"There is no viable route from "+ from + " to " + to + "\", " +
+                            "\"queryOutput\":" + response.getRoutingServiceResponse().asText() +
+                            "}");
 
         } else {
 
-            RoutesResponse response = new RoutesResponse(new ArrayList<>(), "");
-            return new RESTResponse<RoutesResponse>(counter.incrementAndGet(), response)
-                    .withInfo("{" +
-                            "\"info\":\"There is no viable route from "+ from + " to " + to + "\", " +
-                            "\"queryOutput\":" + bodyCache +
-                            "}");
+            return new RESTResponse<>(counter.incrementAndGet(), response)
+                    .withInfo("Route found.");
+
         }
     }
 
@@ -293,18 +156,8 @@ public class RestAPIController {
     RESTResponse<Marker> getMarkerAt(@RequestParam("coordinates") String point,
                                      Model model) throws Exception {
 
-        GeoCoordinates coordinates = GeoCoordinates.fromString(point);
-
-        List<Marker> res = this.getElementsInArea(coordinates, this.minimumMetersVariation);
-
-        Utils.println(res);
-
-        if(res.isEmpty()){
-            throw new MarkerNotFoundException("No marker found in a range of 1 meter from the specified coordinates: " +
-                    coordinates.toString());
-        }
-
-        return  new RESTResponse<>(counter.incrementAndGet(), res.get(0));
+        return  new RESTResponse<>(counter.incrementAndGet(),
+                AreaSelector.getMarkerAt(point, model));
     }
 
     @CrossOrigin(origins = "*")
@@ -314,20 +167,18 @@ public class RestAPIController {
                                     @RequestParam("radius") Double radius,
                                     Model model) throws Exception {
 
-        GeoCoordinates gcOrigin = GeoCoordinates.fromString(origin);
-
-        return new RESTResponse<>(counter.incrementAndGet(), getElementsInArea(gcOrigin, radius));
+        return new RESTResponse<>(counter.incrementAndGet(),
+                AreaSelector.getMarkersInArea(origin, radius, model));
     }
 
     @CrossOrigin(origins = "*")
     @RequestMapping(method = RequestMethod.GET, value = "/geodecode")
     public @ResponseBody
-    RESTResponse<GeoCoordinates> geodecode(
-            @RequestParam("place") String place, Model model) {
+    RESTResponse<GeoCoordinates> geodecode(@RequestParam("place") String place, Model model) {
 
         return new RESTResponse<>(
                 counter.incrementAndGet(),
-                geoCoding(place).orElse(GeoCoordinates.empty())
+                GeoCoding.decode(place).orElse(GeoCoordinates.empty())
         );
     }
 
@@ -339,7 +190,7 @@ public class RestAPIController {
 
         return new RESTResponse<>(
                 counter.incrementAndGet(),
-                reverseGeoCoding(GeoCoordinates.fromString(coordinates))
+                GeoCoding.reverse(GeoCoordinates.fromString(coordinates))
                         .orElse(OSMAddressNode.empty()).unfiltered()
         );
     }
@@ -349,72 +200,23 @@ public class RestAPIController {
     public @ResponseBody
     RESTResponse<String> add(@RequestBody String body, Model model) throws Exception {
 
-        Utils.println(body);
-        final Type type = new TypeToken<CURequest<GeoCoordinates>>(){}.getType();
-        final CURequest<GeoCoordinates> stub = gson.fromJson(body, type);
-
-        final GeoCoordinates coordinates = stub.getContent();
-        final String registration = stub.getToken();
-
-        if (TokenManager.getInstance().hasToken(registration)) {
-            Optional<OSMAddressNode> reversedCoordinates = reverseGeoCoding(coordinates);
-
-            Handle handler = JdbiSingleton.getInstance().open();
-
-            final Integer responseValue = reversedCoordinates
-                    .map(node -> handler
-                        .createUpdate(SQL.insertMarkerQuery)
-                        .bind("x", coordinates.getLng()).bind("y", coordinates.getLat())
-                        .bind("country", Utils.stringify(node.getCountry()))
-                        .bind("country_code", Utils.stringify(node.getCountryCode()))
-                        .bind("region", Utils.stringify(node.getRegion()))
-                        .bind("county", Utils.stringify(node.getCounty()))
-                        .bind("city", Utils.stringify(node.getCity()))
-                        .bind("district", Utils.stringify(node.getDistrict()))
-                        .bind("suburb", Utils.stringify(node.getSuburb()))
-                        .bind("town", Utils.stringify(node.getTown()))
-                        .bind("village", Utils.stringify(node.getVillage()))
-                        .bind("place", Utils.stringify(node.getPlace()))
-                        .bind("postcode", Utils.stringify(node.getPostcode()))
-                        .bind("neighbourhood", Utils.stringify(node.getNeighbourhood()))
-                        .bind("road", Utils.stringify(node.getRoad()))
-                        .bind("house_number", node.getHouseNumber())
-                        .execute()
-                    ).orElse(-1);
-
-            handler.close();
-
-            if(responseValue == -1) {
-                throw new DBQueryExecutionException("Error occured during the marker adding");
-            }
-
-            return new RESTResponse<>(counter.incrementAndGet(), "Marker successfully added");
-        } else {
-            throw new AbsentTokenException(registration);
-        }
+        return new RESTResponse<>(counter.incrementAndGet(), MarkerInserter.addMarker(body, model));
 
     }
 
     @CrossOrigin(origins = "*")
-    @RequestMapping(method = RequestMethod.GET, value = "/{id}", headers="Content-Type=application/json; charset=utf-8")
+    @RequestMapping(method = RequestMethod.GET, value = "/id/{id}", headers="Content-Type=application/json; charset=utf-8")
     public @ResponseBody
     RESTResponse<Marker> getMarkerByUId(@PathVariable Integer id,
                                         Model model) throws Exception {
-        String info;
-        Handle handler = JdbiSingleton.getInstance().open();
+        Optional<Marker> optionalMarker = SelectorById.getMarkerByUId(id, model);
 
-        Query q = handler.select(SQL.selectMarkerByUId).bind("marker_id", id);
-
-        List<Marker> res = resolveQuery(q);
-
-        handler.close();
-
-        if (res.isEmpty()) {
-            info = String.format("Added no matching marker with id=%d;\n", id);
+        if (optionalMarker.isPresent()) {
+            return new RESTResponse<>(counter.incrementAndGet(), optionalMarker.get());
+        } else {
+            String info = String.format("Added no matching marker with id=%d;\n", id);
             return new RESTResponse<>(counter.incrementAndGet(), new Marker()).withInfo(info);
         }
-
-        return new RESTResponse<>(counter.incrementAndGet(), res.get(0));
     }
 
     @CrossOrigin(origins = "*")
@@ -422,13 +224,7 @@ public class RestAPIController {
     public @ResponseBody
     RESTResponse<String> addToken(@RequestBody String registration, Model model) throws Exception {
 
-        String token = gson.fromJson(registration, Registration.class).getToken();
-
-        TokenManager.getInstance().addToken(token);
-
-        Utils.log(String.format("Token %s registered!", token));
-
-        return new RESTResponse<>(counter.incrementAndGet(), "Token successfully Registered!");
+        return new RESTResponse<>(counter.incrementAndGet(), DeviceSubscriber.addToken(registration, model));
     }
 
     @CrossOrigin(origins = "*")
@@ -438,29 +234,10 @@ public class RestAPIController {
                                     @RequestBody String body,
                                     Model model) throws Exception {
 
-        final Type type = new TypeToken<CURequest<Upvote>>(){}.getType();
-        final CURequest<Upvote> stub = gson.fromJson(body, type);
 
-        final Upvote upvote = stub.getContent();
+        String info = String.format("Added Upvote to %d on date %s;\n", id, DateTime.now().toLocalDateTime());
 
-        int res;
-        String info;
-        Handle handler = JdbiSingleton.getInstance().open();
-
-        if (id != upvote.getMarkerId()) {
-            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + upvote.getMarkerId() + ")");
-        }
-
-        TokenManager.getInstance().register(stub.getToken(), upvote.getMarkerId());
-
-        res = handler.createUpdate(SQL.upvoteMarkerQuery)
-                .bind("marker_id", upvote.getMarkerId()).execute();
-
-        info = String.format("Added Upvote to %d on date %s;\n", id, DateTime.now().toLocalDateTime());
-
-        handler.close();
-
-        return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
+        return new RESTResponse<>(counter.incrementAndGet(), UpvoteUpdater.addUpvote(id, body, model)).withInfo(info);
 
     }
 
@@ -471,192 +248,13 @@ public class RestAPIController {
                                       @RequestBody String body,
                                       Model model) throws Exception {
 
-        final Type type = new TypeToken<CURequest<UserFeedback>>(){}.getType();
-        final CURequest<UserFeedback> stub = gson.fromJson(body, type);
+        Tuple<Integer, String> t = FeedbackInserter.addFeedback(id, body, model);
 
-        final UserFeedback userFeedback = stub.getContent();
-        final String registration = stub.getToken();
+        String info = String.format(
+                "Added Comment %s to %d on date %s;\n",
+                t.getY(), id, DateTime.now().toLocalDateTime()
+        );
 
-        if (id != userFeedback.getMarkerId()) {
-            throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + userFeedback.getMarkerId() + ")");
-        }
-
-        if (TokenManager.getInstance().hasToken(registration)) {
-            Handle handler = JdbiSingleton.getInstance().open();
-            int res;
-            String info;
-
-            if (!userFeedback.getText().isEmpty()) { // Add Comment
-                try {
-                    res = handler
-                            .createUpdate(SQL.insertCommentToMarkerQuery)
-                            .bind("marker_id", userFeedback.getMarkerId())
-                            .bind("text", Utils.stringify(userFeedback.getText()))
-                            .execute();
-
-                    info = String.format(
-                            "Added Comment %s to %d on date %s;\n",
-                            userFeedback.getText(), id, DateTime.now().toLocalDateTime()
-                    );
-
-                } catch (Exception e) {
-                    throw new DBQueryExecutionException("Unable to execute statement on the DB");
-                }
-            } else {
-                throw new WrongBodyDataException("Empty Comment.");
-            }
-
-            handler.close();
-
-            return new RESTResponse<>(counter.incrementAndGet(), res).withInfo(info);
-        } else {
-            throw new AbsentTokenException(registration);
-        }
-    }
-
-    private List<Marker> resolveQuery(final Query q) throws Exception{
-        List<Tuple4<Integer, Integer, String, String>> resultSets =
-                q.map((rs, ctx) -> tuple4(
-                        rs.getInt("ID"),
-                        rs.getInt("N_DETECTIONS"),
-                        rs.getString("coordinates").replace("\'", ""),
-                        rs.getString("addressNode").replace("\'", "")
-                )).list();
-
-        List<Marker> res = new ArrayList<>();
-
-//        println(resultSets);
-
-        for (Tuple4<Integer, Integer, String, String> n : resultSets) {
-            res.add(new Marker(
-                    Long.valueOf(n.getX()),
-                    Long.valueOf(n.getY()),
-                    GeoCoordinates.fromString(n.getW()),
-                    gson.fromJson(n.getZ(), OSMAddressNode.class).unfiltered()
-            ));
-        }
-
-//        Utils.println(res);
-
-        return res;
-    }
-
-    private Optional<GeoCoordinates> geoCoding(final String place) {
-
-        final String bodyCache;
-
-        try {
-
-            final String url = String.format(geoCodingURLFormat, URLEncoder.encode(place, UTF_8), "jsonv2", 1);
-
-            Utils.log(url);
-
-            bodyCache = HTTP.get(url);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Optional.empty();
-        }
-
-        Matcher matcher = geocodingCoordinates.matcher(bodyCache);
-
-        if (matcher.find()) {
-            String coordinates = matcher.group(0).replaceFirst("lon", "lng");
-
-            return Optional.of(gson.fromJson("{" + coordinates + "}", GeoCoordinates.class));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private Optional<OSMAddressNode> reverseGeoCoding(final GeoCoordinates coordinates) {
-
-        final String bodyCache;
-        try {
-
-            final String url = String.format(
-                    reverseGeoCodingURLFormat,
-                    coordinates.getLng(), coordinates.getLat(),
-                    "jsonv2"
-            );
-
-            Utils.log(url);
-
-            bodyCache = HTTP.get(url);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            return Optional.empty();
-        }
-
-        Matcher matcher = reverseGeocodingAddress.matcher(bodyCache);
-
-        if (matcher.find()) {
-            String address = matcher.group(1);
-
-            address = address.replaceFirst("address[0-9]+", "place")
-                    .replaceFirst("country_code", "countryCode")
-                    .replaceFirst("house_number", "houseNumber")
-                    .replaceFirst("state", "region")
-                    .replaceFirst("city_district", "district");
-
-            return Optional.of(gson.fromJson("{" + address + "}", OSMAddressNode.class));
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    private List<Marker> getElementsInArea(GeoCoordinates origin, Double searchRadius) throws Exception {
-
-        Handle handler = JdbiSingleton.getInstance().open();
-
-        Query q = handler.select(SQL.selectInAreaQuery);
-
-        // Need to bind
-        q.bind("y", origin.getLat())
-         .bind("x", origin.getLng())
-         .bind("radius", searchRadius);
-
-        List<Marker> res = this.resolveQuery(q);
-
-        handler.close();
-
-        return res;
-    }
-
-    private String filters(final String country, final String region, final String county, final String town, final String road) {
-
-        final Map<String, Boolean> enabledFilters = new HashMap<>();
-        final Map<String, Boolean> specialFilters = new HashMap<>();
-
-        enabledFilters.put("country", !country.toLowerCase().equals(defaultCountry));
-        enabledFilters.put("region", !region.toLowerCase().equals(defaultRegion));
-        enabledFilters.put("county", !county.toLowerCase().equals(defaultCounty));
-        enabledFilters.put("road", !road.toLowerCase().equals(defaultRoad));
-
-        specialFilters.put("town", !town.toLowerCase().equals(defaultTown));
-        specialFilters.put("city", !town.toLowerCase().equals(defaultTown));
-
-        final List<String> eFilters = enabledFilters.entrySet().stream()
-                .filter(Map.Entry::getValue)
-                .map(e-> e.getKey() + " ILIKE :" + e.getKey().toLowerCase()+"")
-                .collect(Collectors.toList());
-
-        final List<String> sFilters = specialFilters.entrySet().stream()
-                .filter(Map.Entry::getValue)
-                .map(e-> e.getKey() + " ILIKE :" + e.getKey().toLowerCase()+"")
-                .collect(Collectors.toList());
-
-        final String eFilter = String.join(" AND ", eFilters);
-        final String sFilter = String.join(" OR ", sFilters) ;
-
-        final String filter = String.join(" AND ", eFilter, "(" + sFilter + ")");
-
-//        println(filter);
-
-        return eFilters.isEmpty() && sFilters.isEmpty() ? Boolean.toString(true) :
-                eFilters.isEmpty() ? sFilter :
-                sFilter.isEmpty() ? eFilter :
-                filter;
+        return new RESTResponse<>(counter.incrementAndGet(), t.getX()).withInfo(info);
     }
 }
