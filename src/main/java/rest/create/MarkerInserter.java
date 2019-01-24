@@ -1,7 +1,7 @@
 package rest.create;
 
 import com.google.gson.reflect.TypeToken;
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import core.TokenManager;
 import core.exceptions.AbsentTokenException;
 import core.exceptions.DBQueryExecutionException;
@@ -32,7 +32,7 @@ public class MarkerInserter {
         if (TokenManager.getInstance().hasToken(registration)) {
             Optional<OSMAddressNode> reversedCoordinates = GeoCoding.reverse(coordinates);
 
-            Handle handler = JdbiSingleton.getInstance().open();
+            Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
 
             final Integer responseValue = reversedCoordinates
                     .map(node -> handler

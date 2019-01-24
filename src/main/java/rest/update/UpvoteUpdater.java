@@ -1,13 +1,12 @@
 package rest.update;
 
 import com.google.gson.reflect.TypeToken;
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import core.TokenManager;
 import core.exceptions.WrongBodyDataException;
 import json.CURequest;
 import json.Upvote;
 import org.jdbi.v3.core.Handle;
-import org.joda.time.DateTime;
 import org.springframework.ui.Model;
 import utils.SQL;
 import utils.Utils;
@@ -23,7 +22,7 @@ public class UpvoteUpdater {
 
         final Upvote upvote = stub.getContent();
 
-        Handle handler = JdbiSingleton.getInstance().open();
+        Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
 
         if (id != upvote.getMarkerId()) {
             throw new WrongBodyDataException("Mismatch between PathVariable markerId ("+ id + ") and body markerID (" + upvote.getMarkerId() + ")");

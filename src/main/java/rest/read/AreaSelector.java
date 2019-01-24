@@ -1,6 +1,6 @@
 package rest.read;
 
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import core.exceptions.MarkerNotFoundException;
 import json.GeoCoordinates;
 import json.Marker;
@@ -41,7 +41,7 @@ public class AreaSelector {
 
     private static List<Marker> getElementsInArea(GeoCoordinates origin, Double searchRadius) throws Exception {
 
-        Handle handler = JdbiSingleton.getInstance().open();
+        Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
 
         Query q = handler.select(SQL.selectInAreaQuery);
 

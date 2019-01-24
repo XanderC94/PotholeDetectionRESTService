@@ -1,12 +1,11 @@
 package rest.read;
 
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import core.exceptions.FormatException;
 import json.*;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
 import org.springframework.ui.Model;
-import rest.RESTResponse;
 import utils.*;
 
 import java.util.*;
@@ -66,7 +65,7 @@ public class RouteSelector {
                 vertices.add(GeoCoordinates.fromString(matcher2.group(0)));
             }
 
-            final Handle handler = JdbiSingleton.getInstance().open();
+            final Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
 
             final Query q = handler.select(SQL.selectOnRouteQuery);
 

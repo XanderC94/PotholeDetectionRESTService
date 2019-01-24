@@ -1,7 +1,7 @@
 package rest.update;
 
 import com.google.gson.reflect.TypeToken;
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import core.TokenManager;
 import core.exceptions.AbsentTokenException;
 import core.exceptions.DBQueryExecutionException;
@@ -10,9 +10,7 @@ import json.CURequest;
 import json.Tuple;
 import json.UserFeedback;
 import org.jdbi.v3.core.Handle;
-import org.joda.time.DateTime;
 import org.springframework.ui.Model;
-import rest.RESTResponse;
 import utils.SQL;
 import utils.Utils;
 
@@ -33,7 +31,7 @@ public class FeedbackInserter {
         }
 
         if (TokenManager.getInstance().hasToken(registration)) {
-            Handle handler = JdbiSingleton.getInstance().open();
+            Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
             int res;
 
             if (!userFeedback.getText().isEmpty()) { // Add Comment

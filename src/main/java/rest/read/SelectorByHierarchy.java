@@ -1,11 +1,10 @@
 package rest.read;
 
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import json.Marker;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
 import org.springframework.ui.Model;
-import rest.RESTResponse;
 import utils.SQL;
 import utils.Utils;
 
@@ -22,7 +21,7 @@ public class SelectorByHierarchy {
         county = Utils.provincesFilter.filter(county);
         region = Utils.regionFilter.filter(region);
 
-        Handle handler = JdbiSingleton.getInstance().open();
+        Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
 
         String filters = createFilter(country, region, county, town, road);
 //        Utils.println(filters);

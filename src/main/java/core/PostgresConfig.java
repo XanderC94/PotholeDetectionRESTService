@@ -8,11 +8,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.stereotype.Component;
 import utils.Logging;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Component
 @Configuration
 public class PostgresConfig {
 
@@ -58,11 +60,11 @@ public class PostgresConfig {
         return new JdbiFactoryBean(getDataSource()).setPlugins(getPlugins());
     }
 
-    @Bean(name = "service")
-    public JdbiSingleton getJdbiConnectorInstance() throws Exception {
-        Logging.log("Wrapping Jdbi Singleton...");
-        return new JdbiSingleton(getJDBIFactory().getObject());
-    }
+//    @Bean(name = "service")
+//    public JdbiInstanceManager getJdbiConnectorInstance() throws Exception {
+//        Logging.log("Wrapping Jdbi Singleton...");
+//        return JdbiInstanceManager.setPostgreSQLConfig(this);
+//    }
 
     @Bean(name = "transactionManager")
     public DataSourceTransactionManager getTransactionManager() throws Exception {

@@ -1,6 +1,6 @@
 package rest.read;
 
-import core.JdbiSingleton;
+import core.JdbiInstanceManager;
 import json.Marker;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.statement.Query;
@@ -15,7 +15,7 @@ public class SelectorById {
 
     public static Optional<Marker> getMarkerByUId(Integer id, Model model) throws Exception {
         String info;
-        Handle handler = JdbiSingleton.getInstance().open();
+        Handle handler = JdbiInstanceManager.getInstance().getConnector().open();
 
         Query q = handler.select(SQL.selectMarkerByUId).bind("marker_id", id);
 
